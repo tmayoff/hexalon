@@ -6,9 +6,25 @@ const HEX_SIZE: f32 = 35.0;
 const HEX_SPACING: f32 = 2.0;
 
 lazy_static! {
-    static ref HEX_TINT_COLOR: Color = Color::GRAY;
+    pub static ref HEX_HOVER_COLOR: Color = Color::Rgba {
+        red: 0.9,
+        green: 0.9,
+        blue: 0.9,
+        alpha: 1.0
+    };
+    pub static ref HEX_PRESSED_COLOR: Color = Color::Rgba {
+        red: 0.5,
+        green: 0.5,
+        blue: 0.5,
+        alpha: 1.0
+    };
     static ref HEX_GRID_HORIZONTAL_OFFSET: f32 = 3_f32.sqrt();
-    static ref HEX_COLOR: Color = Color::BLUE;
+    static ref HEX_COLOR: Color = Color::Rgba {
+        red: 1.0,
+        green: 1.0,
+        blue: 1.0,
+        alpha: 1.0
+    };
 }
 
 #[derive(Component)]

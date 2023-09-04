@@ -1,4 +1,5 @@
-use bevy::{math::vec4, prelude::*, sprite::MaterialMesh2dBundle};
+use crate::grid::*;
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{prelude::*, PickableBundle};
 
 #[derive(Component)]
@@ -27,22 +28,27 @@ impl Cell {
         };
 
         commands
-            .spawn((mesh, c, PickableBundle::default(), HIGHLIGHT_TINT))
+            .spawn((
+                mesh,
+                c,
+                RaycastPickTarget::default(),
+                PickableBundle::default(),
+                HIGHLIGHT_TINT,
+            ))
             .id()
     }
 }
 
 pub const HIGHLIGHT_TINT: Highlight<ColorMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| ColorMaterial {
-        color: matl.color + vec4(-0.2, -0.2, 0.4, 0.0),
+        color: *HEX_HOVER_COLOR,
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| ColorMaterial {
-        color: matl.color + vec4(-0.3, -0.3, 0.5, 0.0),
+        color: *HEX_PRESSED_COLOR,
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| ColorMaterial {
-        color: matl.color + vec4(-0.3, 0.2, -0.3, 0.0),
         ..matl.to_owned()
     })),
 };
