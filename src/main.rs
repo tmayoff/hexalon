@@ -31,6 +31,7 @@ fn main() {
             PanCamPlugin,
         ))
         .add_systems(Startup, setup)
+        // .add_systems(Update, grid_selection.run_if(on_event::<cell::DragEvent>()))
         .run();
 }
 
@@ -46,7 +47,10 @@ fn setup(
     // Setup Camera
     commands.spawn((
         Camera2dBundle::default(),
-        PanCam::default(),
+        PanCam {
+            grab_buttons: vec![MouseButton::Middle],
+            ..Default::default()
+        },
         RaycastPickCamera::default(),
     ));
 }

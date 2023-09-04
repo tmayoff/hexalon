@@ -1,6 +1,7 @@
 use crate::cell::Cell;
 
 use bevy::{prelude::*, sprite::ColorMaterial};
+use bevy_mod_picking::{prelude::*, PickableBundle};
 
 const HEX_SIZE: f32 = 35.0;
 const HEX_SPACING: f32 = 2.0;
@@ -27,10 +28,17 @@ lazy_static! {
     };
 }
 
+struct Selection {
+    start: Entity,
+    end: Option<Entity>,
+}
+
 #[derive(Component)]
 pub struct Grid {
     pub size: i32,
     pub grid: Vec<Vec<Entity>>,
+
+    selection: Option<Selection>,
 }
 
 impl Grid {
@@ -46,7 +54,10 @@ impl Grid {
         let mut grid = Grid {
             size,
             grid: Vec::new(),
+            selection: None,
         };
+
+        let mut children = vec![];
 
         for x in -(size / 2)..(size / 2) {
             grid.grid.push(Vec::new());
@@ -70,9 +81,47 @@ impl Grid {
                 );
 
                 grid.grid[(x + (size / 2)) as usize].push(id);
+                children.push(id);
             }
         }
 
         commands.spawn(grid);
+    }
+}
+
+pub fn grid_selection_down(
+    event: Listener<Pointer<Down>>,
+    mut grid_q: Query<&mut Grid>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    cell_q: Query<(&Cell, &Handle<ColorMaterial>)>,
+) {
+    let mut grid = grid_q.single_mut();
+
+    grid.selection = Some(Selection {
+        start: event.target,
+        end: None,
+    });
+
+    let (_, mat) = cell_q.get(event.target).unwrap();
+    let mat = materials.get_mut(mat).unwrap();
+    mat.color = Color::BLUE;
+}
+
+pub fn grid_selection_up(
+    event: Listener<Pointer<Up>>,
+    mut grid_q: Query<&mut Grid>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    cell_q: Query<(&Cell, &Handle<ColorMaterial>)>,
+) {
+    let grid = grid_q.single_mut();
+    if grid.selection.is_some() {
+        // let (_, mat) = cell_q.get(selection.start).unwrap();
+        // let mat = materials.get_mut(mat).unwrap();
+        // mat.color = Color::BLUE;
+
+        // Selection must have started
+        let (_, mat) = cell_q.get(event.target).unwrap();
+        let mat = materials.get_mut(mat).unwrap();
+        mat.color = Color::BLUE;
     }
 }
