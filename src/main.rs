@@ -27,7 +27,8 @@ fn main() {
             DefaultPlugins.build().disable::<AudioPlugin>(),
             DefaultPickingPlugins
                 .build()
-                .disable::<DebugPickingPlugin>(),
+                .disable::<DebugPickingPlugin>()
+                .disable::<DefaultHighlightingPlugin>(),
             PanCamPlugin,
         ))
         .add_systems(Startup, setup)

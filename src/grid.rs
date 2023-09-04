@@ -1,7 +1,7 @@
 use crate::cell::Cell;
 
 use bevy::{prelude::*, sprite::ColorMaterial};
-use bevy_mod_picking::{prelude::*, PickableBundle};
+use bevy_mod_picking::prelude::*;
 
 const HEX_SIZE: f32 = 35.0;
 const HEX_SPACING: f32 = 2.0;
@@ -20,12 +20,6 @@ lazy_static! {
         alpha: 1.0
     };
     static ref HEX_GRID_HORIZONTAL_OFFSET: f32 = 3_f32.sqrt();
-    static ref HEX_COLOR: Color = Color::Rgba {
-        red: 1.0,
-        green: 1.0,
-        blue: 1.0,
-        alpha: 1.0
-    };
 }
 
 struct Selection {
@@ -74,7 +68,6 @@ impl Grid {
                 let id = Cell::create(
                     Vec2::new(x_pos, y_pos),
                     HEX_SIZE,
-                    *HEX_COLOR,
                     commands,
                     meshes,
                     materials,
@@ -93,7 +86,7 @@ pub fn grid_selection_down(
     event: Listener<Pointer<Down>>,
     mut grid_q: Query<&mut Grid>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    cell_q: Query<(&Cell, &Handle<ColorMaterial>)>,
+    mut cell_q: Query<(&mut Cell, &Handle<ColorMaterial>)>,
 ) {
     let mut grid = grid_q.single_mut();
 
@@ -102,7 +95,9 @@ pub fn grid_selection_down(
         end: None,
     });
 
-    let (_, mat) = cell_q.get(event.target).unwrap();
+    let (mut cell, mat) = cell_q.get_mut(event.target).unwrap();
+    cell.color_managed = true;
+
     let mat = materials.get_mut(mat).unwrap();
     mat.color = Color::BLUE;
 }
@@ -111,7 +106,7 @@ pub fn grid_selection_up(
     event: Listener<Pointer<Up>>,
     mut grid_q: Query<&mut Grid>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    cell_q: Query<(&Cell, &Handle<ColorMaterial>)>,
+    mut cell_q: Query<(&mut Cell, &Handle<ColorMaterial>)>,
 ) {
     let grid = grid_q.single_mut();
     if grid.selection.is_some() {
@@ -120,7 +115,9 @@ pub fn grid_selection_up(
         // mat.color = Color::BLUE;
 
         // Selection must have started
-        let (_, mat) = cell_q.get(event.target).unwrap();
+        let (mut cell, mat) = cell_q.get_mut(event.target).unwrap();
+        cell.color_managed = true;
+
         let mat = materials.get_mut(mat).unwrap();
         mat.color = Color::BLUE;
     }

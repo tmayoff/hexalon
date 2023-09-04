@@ -2,27 +2,40 @@ use crate::grid::{self, *};
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{prelude::*, PickableBundle};
 
+lazy_static! {
+    static ref HEX_COLOR: Color = Color::Rgba {
+        red: 1.0,
+        green: 1.0,
+        blue: 1.0,
+        alpha: 1.0
+    };
+}
+
 #[derive(Component)]
 pub struct Cell {
     _size: f32,
+
+    pub color_managed: bool,
 }
 
 impl Cell {
     pub fn create(
         position: Vec2,
         size: f32,
-        color: Color,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
     ) -> Entity {
-        let c = Cell { _size: size };
+        let c = Cell {
+            _size: size,
+            color_managed: false,
+        };
 
         let mesh = MaterialMesh2dBundle {
             mesh: meshes
                 .add(Mesh::from(shape::RegularPolygon::new(size, 6)))
                 .into(),
-            material: materials.add(color.into()),
+            material: materials.add((*HEX_COLOR).into()),
             transform: Transform::default().with_translation(position.extend(0.1)),
             ..Default::default()
         };
@@ -33,7 +46,8 @@ impl Cell {
                 c,
                 RaycastPickTarget::default(),
                 PickableBundle::default(),
-                HIGHLIGHT_TINT,
+                On::<Pointer<Over>>::run(on_hover_enter),
+                On::<Pointer<Out>>::run(on_hover_out),
                 On::<Pointer<Down>>::run(grid::grid_selection_down),
                 On::<Pointer<Up>>::run(grid::grid_selection_up),
             ))
@@ -41,24 +55,28 @@ impl Cell {
     }
 }
 
-#[derive(Event)]
-pub struct DragEvent(Entity);
-impl From<ListenerInput<Pointer<Drag>>> for DragEvent {
-    fn from(event: ListenerInput<Pointer<Drag>>) -> Self {
-        DragEvent(event.target)
+fn on_hover_enter(
+    event: Listener<Pointer<Over>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    cell_q: Query<(&Cell, &Handle<ColorMaterial>)>,
+) {
+    if let Ok((cell, mat)) = cell_q.get(event.target) {
+        if !cell.color_managed {
+            let material = materials.get_mut(mat).unwrap();
+            material.color = *HEX_HOVER_COLOR;
+        }
     }
 }
 
-pub const HIGHLIGHT_TINT: Highlight<ColorMaterial> = Highlight {
-    hovered: Some(HighlightKind::new_dynamic(|matl| ColorMaterial {
-        color: *HEX_HOVER_COLOR,
-        ..matl.to_owned()
-    })),
-    pressed: Some(HighlightKind::new_dynamic(|matl| ColorMaterial {
-        color: *HEX_PRESSED_COLOR,
-        ..matl.to_owned()
-    })),
-    selected: Some(HighlightKind::new_dynamic(|matl| ColorMaterial {
-        ..matl.to_owned()
-    })),
-};
+fn on_hover_out(
+    event: Listener<Pointer<Out>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    cell_q: Query<(&Cell, &Handle<ColorMaterial>)>,
+) {
+    if let Ok((cell, mat)) = cell_q.get(event.target) {
+        if !cell.color_managed {
+            let material = materials.get_mut(mat).unwrap();
+            material.color = *HEX_COLOR;
+        }
+    }
+}
