@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.11.2" }
+bevy_mod_picking = { version = "0.15.0", features = ["all"] }
+bevy_pancam = "0.9.0"
 lazy_static = "1.4.0"
 
 # Enable a small amount of optimization in debug mode
