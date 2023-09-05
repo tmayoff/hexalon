@@ -2,12 +2,16 @@
 extern crate lazy_static;
 
 mod cell;
+mod draw;
 mod grid;
+mod ui;
 
 use bevy::{audio::AudioPlugin, prelude::*};
+use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_pancam::{PanCam, PanCamPlugin};
 
+use draw::Draw;
 use grid::Grid;
 
 lazy_static! {
@@ -30,9 +34,11 @@ fn main() {
                 .disable::<DebugPickingPlugin>()
                 .disable::<DefaultHighlightingPlugin>(),
             PanCamPlugin,
+            EguiPlugin,
         ))
         .add_systems(Startup, setup)
-        // .add_systems(Update, grid_selection.run_if(on_event::<cell::DragEvent>()))
+        .add_systems(Update, (ui::gui, draw::draw))
+        .add_event::<draw::DrawEvent>()
         .run();
 }
 
@@ -44,6 +50,8 @@ fn setup(
     // Setup Grid
     const GRID_SIZE: i32 = 250;
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
+
+    commands.spawn(Draw::default());
 
     // Setup Camera
     commands.spawn((

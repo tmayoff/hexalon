@@ -1,4 +1,4 @@
-use crate::cell::Cell;
+use crate::{cell::Cell, draw};
 
 use bevy::{prelude::*, sprite::ColorMaterial};
 use bevy_mod_picking::prelude::*;
@@ -22,17 +22,12 @@ lazy_static! {
     static ref HEX_GRID_HORIZONTAL_OFFSET: f32 = 3_f32.sqrt();
 }
 
-struct Selection {
-    start: Entity,
-    end: Option<Entity>,
-}
-
 #[derive(Component)]
 pub struct Grid {
     pub size: i32,
     pub grid: Vec<Vec<Entity>>,
 
-    selection: Option<Selection>,
+    selection: Option<draw::Selection>,
 }
 
 impl Grid {
@@ -82,43 +77,36 @@ impl Grid {
     }
 }
 
-pub fn grid_selection_down(
-    event: Listener<Pointer<Down>>,
-    mut grid_q: Query<&mut Grid>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut cell_q: Query<(&mut Cell, &Handle<ColorMaterial>)>,
-) {
+pub fn grid_selection_down(event: Listener<Pointer<Down>>, mut grid_q: Query<&mut Grid>) {
+    if event.button != PointerButton::Primary {
+        return;
+    }
+
     let mut grid = grid_q.single_mut();
 
-    grid.selection = Some(Selection {
+    grid.selection = Some(draw::Selection {
         start: event.target,
         end: None,
     });
-
-    let (mut cell, mat) = cell_q.get_mut(event.target).unwrap();
-    cell.color_managed = true;
-
-    let mat = materials.get_mut(mat).unwrap();
-    mat.color = Color::BLUE;
 }
 
 pub fn grid_selection_up(
     event: Listener<Pointer<Up>>,
     mut grid_q: Query<&mut Grid>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut cell_q: Query<(&mut Cell, &Handle<ColorMaterial>)>,
+    mut draw_event: EventWriter<draw::DrawEvent>,
 ) {
-    let grid = grid_q.single_mut();
-    if grid.selection.is_some() {
-        // let (_, mat) = cell_q.get(selection.start).unwrap();
-        // let mat = materials.get_mut(mat).unwrap();
-        // mat.color = Color::BLUE;
-
-        // Selection must have started
-        let (mut cell, mat) = cell_q.get_mut(event.target).unwrap();
-        cell.color_managed = true;
-
-        let mat = materials.get_mut(mat).unwrap();
-        mat.color = Color::BLUE;
+    if event.button != PointerButton::Primary {
+        return;
     }
+
+    let mut grid = grid_q.single_mut();
+    if let Some(selection) = &mut grid.selection {
+        selection.end = Some(event.target);
+
+        draw_event.send(draw::DrawEvent {
+            selection: *selection,
+        });
+    }
+
+    grid.selection = None;
 }
