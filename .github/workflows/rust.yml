@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Update APT
+      run: apt-get -y update
+    - name: Install Dependencies
+      run: apt-get -y install mold
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
