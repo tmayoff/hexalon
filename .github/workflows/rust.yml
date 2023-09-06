@@ -18,7 +18,7 @@ jobs:
     - name: Update APT
       run: sudo apt-get -y update
     - name: Install Dependencies
-      run: sudo apt-get -y install mold
+      run: sudo apt-get -y install mold libx11-dev libasound2-dev libudev-dev
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
