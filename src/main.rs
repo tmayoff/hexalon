@@ -37,8 +37,8 @@ fn main() {
             EguiPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(Update, (ui::gui, draw::draw))
-        .add_event::<draw::DrawEvent>()
+        .add_systems(Update, (ui::gui, draw::on_draw))
+        .add_event::<cell::CellEvent>()
         .run();
 }
 

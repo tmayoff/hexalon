@@ -1,7 +1,6 @@
-use crate::{cell::Cell, draw};
+use crate::cell::{Cell, HexCoord};
 
 use bevy::{prelude::*, sprite::ColorMaterial};
-use bevy_mod_picking::prelude::*;
 
 const HEX_SIZE: f32 = 35.0;
 const HEX_SPACING: f32 = 2.0;
@@ -25,9 +24,7 @@ lazy_static! {
 #[derive(Component)]
 pub struct Grid {
     pub size: i32,
-    pub grid: Vec<Vec<Entity>>,
-
-    selection: Option<draw::Selection>,
+    pub cells: Vec<Vec<Entity>>,
 }
 
 impl Grid {
@@ -42,14 +39,13 @@ impl Grid {
 
         let mut grid = Grid {
             size,
-            grid: Vec::new(),
-            selection: None,
+            cells: Vec::new(),
         };
 
         let mut children = vec![];
 
         for x in -(size / 2)..(size / 2) {
-            grid.grid.push(Vec::new());
+            grid.cells.push(Vec::new());
             for y in -(size / 2)..(size / 2) {
                 let x_offset = if y % 2 == 0 {
                     horizontal_spacing / 2.0
@@ -63,50 +59,54 @@ impl Grid {
                 let id = Cell::create(
                     Vec2::new(x_pos, y_pos),
                     HEX_SIZE,
+                    HexCoord {
+                        q: x + (size / 2),
+                        r: y + (size / 2),
+                    },
                     commands,
                     meshes,
                     materials,
                 );
 
-                grid.grid[(x + (size / 2)) as usize].push(id);
+                grid.cells[(x + (size / 2)) as usize].push(id);
                 children.push(id);
             }
         }
 
         commands.spawn(grid);
     }
-}
 
-pub fn grid_selection_down(event: Listener<Pointer<Down>>, mut grid_q: Query<&mut Grid>) {
-    if event.button != PointerButton::Primary {
-        return;
+    pub fn get_cells_in_line(&self, start: &HexCoord, end: &HexCoord) -> Vec<Entity> {
+        let mut cells = Vec::new();
+
+        let dx = (end.q - start.q).abs();
+        let dy = (end.r - start.r).abs();
+        let sx = if start.q < end.q { 1 } else { -1 };
+        let sy = if start.r < end.r { 1 } else { -1 };
+        let mut err = dx - dy;
+
+        let mut q = start.q;
+        let mut r = start.r;
+
+        while q != end.q || r != end.r {
+            cells.push(self.cells[q as usize][r as usize]);
+            let e2 = 2 * err;
+            if e2 > -dy {
+                err -= dy;
+                q += sx;
+            }
+            if e2 < dx {
+                err += dx;
+                r += sy;
+            }
+        }
+
+        cells.push(self.cells[end.q as usize][end.r as usize]); // Ensure the end point is included
+
+        cells
     }
 
-    let mut grid = grid_q.single_mut();
-
-    grid.selection = Some(draw::Selection {
-        start: event.target,
-        end: None,
-    });
-}
-
-pub fn grid_selection_up(
-    event: Listener<Pointer<Up>>,
-    mut grid_q: Query<&mut Grid>,
-    mut draw_event: EventWriter<draw::DrawEvent>,
-) {
-    if event.button != PointerButton::Primary {
-        return;
+    fn world_pos_to_arr_pos(&self, pos: [i32; 2]) -> [i32; 2] {
+        [pos[0] + (self.size / 2), pos[1] + (self.size / 2)]
     }
-
-    let mut grid = grid_q.single_mut();
-    if let Some(selection) = &mut grid.selection {
-        selection.end = Some(event.target);
-
-        draw_event.send(draw::DrawEvent {
-            selection: *selection,
-        });
-    }
-
-    grid.selection = None;
 }
