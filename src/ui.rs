@@ -23,9 +23,9 @@ pub fn gui(mut contexts: EguiContexts, mut draw_q: Query<&mut Draw>) {
                 ui.end_row();
 
                 ui.label("Color");
-                let mut color = draw.color.as_rgba_f32();
-                ui.color_edit_button_rgba_unmultiplied(&mut color);
-                draw.color = color.into();
+                let mut color = draw.color.as_rgba_u8();
+                ui.color_edit_button_srgba_unmultiplied(&mut color);
+                draw.color = Color::from(color.map(|c| c as f32 / 255.0));
                 ui.end_row();
             });
     });

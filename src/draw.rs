@@ -59,19 +59,22 @@ pub fn on_draw(
                 }
             }
             CellEvent::Released(cell) => {
-                if let Some(start_cell) = draw.start_cell {
-                    draw_line(
-                        &start_cell,
-                        cell,
-                        draw.color,
-                        &mut cell_q,
-                        &mut materials,
-                        &mut draw,
-                        grid,
-                    );
+                if draw.draw_mode == DrawMode::Line {
+                    if let Some(start_cell) = draw.start_cell {
+                        draw_line(
+                            &start_cell,
+                            cell,
+                            draw.color,
+                            &mut cell_q,
+                            &mut materials,
+                            &mut draw,
+                            grid,
+                        );
+                    }
+                    draw.last_hint = Vec::new();
                 }
+
                 draw.start_cell = None;
-                draw.last_hint = Vec::new();
             }
             CellEvent::Over(cell) => match draw.draw_mode {
                 DrawMode::Cell => {

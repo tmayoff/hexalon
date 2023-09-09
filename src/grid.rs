@@ -42,35 +42,39 @@ impl Grid {
             cells: Vec::new(),
         };
 
-        let mut children = vec![];
+        let mut temp_cells = vec![vec![None; size as usize]; size as usize];
 
-        for x in -(size / 2)..(size / 2) {
-            grid.cells.push(Vec::new());
-            for y in -(size / 2)..(size / 2) {
-                let x_offset = if y % 2 == 0 {
+        for r in 0..size {
+            for q in 0..size {
+                let x_offset = if r % 2 == 0 {
                     horizontal_spacing / 2.0
                 } else {
                     0.0
                 };
 
-                let x_pos = x as f32 * horizontal_spacing + x_offset;
-                let y_pos = y as f32 * vertical_spacing;
+                let x_pos = (q - (size / 2)) as f32 * horizontal_spacing + x_offset;
+                let y_pos = (r - (size / 2)) as f32 * vertical_spacing;
 
                 let id = Cell::create(
                     Vec2::new(x_pos, y_pos),
                     HEX_SIZE,
-                    HexCoord {
-                        q: x + (size / 2),
-                        r: y + (size / 2),
-                    },
+                    HexCoord { q, r },
                     commands,
                     meshes,
                     materials,
                 );
 
-                grid.cells[(x + (size / 2)) as usize].push(id);
-                children.push(id);
+                let index_q = q as f32 + (r as f32 / 2.0).floor();
+                temp_cells[r as usize][(index_q) as usize] = Some(id);
             }
+        }
+
+        for row in temp_cells {
+            let mut row_vec = Vec::new();
+            for cell in row {
+                row_vec.push(cell.unwrap());
+            }
+            grid.cells.push(row_vec);
         }
 
         commands.spawn(grid);
@@ -79,34 +83,59 @@ impl Grid {
     pub fn get_cells_in_line(&self, start: &HexCoord, end: &HexCoord) -> Vec<Entity> {
         let mut cells = Vec::new();
 
-        let dx = (end.q - start.q).abs();
-        let dy = (end.r - start.r).abs();
-        let sx = if start.q < end.q { 1 } else { -1 };
-        let sy = if start.r < end.r { 1 } else { -1 };
-        let mut err = dx - dy;
-
-        let mut q = start.q;
-        let mut r = start.r;
-
-        while q != end.q || r != end.r {
-            cells.push(self.cells[q as usize][r as usize]);
-            let e2 = 2 * err;
-            if e2 > -dy {
-                err -= dy;
-                q += sx;
-            }
-            if e2 < dx {
-                err += dx;
-                r += sy;
-            }
+        let n = Self::axial_distance(start, end);
+        for i in 0..n {
+            let lerped = Self::cube_lerp(start, end, 1.0 / n as f32 * i as f32);
+            let rounded = Self::cube_round(lerped.q as f32, lerped.r as f32);
+            cells.push(self.cells[rounded.q as usize][rounded.r as usize]);
         }
-
-        cells.push(self.cells[end.q as usize][end.r as usize]); // Ensure the end point is included
 
         cells
     }
 
-    fn world_pos_to_arr_pos(&self, pos: [i32; 2]) -> [i32; 2] {
-        [pos[0] + (self.size / 2), pos[1] + (self.size / 2)]
+    fn lerp(a: f32, b: f32, t: f32) -> f32 {
+        a + (b - a) * t
+    }
+
+    fn cube_lerp(a: &HexCoord, b: &HexCoord, t: f32) -> HexCoord {
+        HexCoord {
+            q: Grid::lerp(a.q as f32, b.q as f32, t).round() as i32,
+            r: Grid::lerp(a.r as f32, b.r as f32, t).round() as i32,
+        }
+    }
+
+    fn axial_subtract(a: &HexCoord, b: &HexCoord) -> HexCoord {
+        HexCoord {
+            q: a.q - b.q,
+            r: a.r - b.r,
+        }
+    }
+
+    fn axial_distance(a: &HexCoord, b: &HexCoord) -> i32 {
+        let vec = Self::axial_subtract(a, b);
+        (vec.q.abs() + vec.r.abs() + (vec.q + vec.r).abs()) / 2
+    }
+
+    fn cube_round(frac_q: f32, frac_r: f32) -> HexCoord {
+        let mut q = (frac_q).round();
+        let mut r = (frac_r).round();
+        let mut s = (-frac_q - frac_r).round();
+
+        let q_diff = (q - frac_q).abs();
+        let r_diff = (r - frac_r).abs();
+        let s_diff = (s - (-frac_q - frac_r)).abs();
+
+        if q_diff > r_diff && q_diff > s_diff {
+            q = -r - s;
+        } else if r_diff > s_diff {
+            r = -q - s
+        } else {
+            s = -q - r
+        }
+
+        HexCoord {
+            q: q as i32,
+            r: r as i32,
+        }
     }
 }
