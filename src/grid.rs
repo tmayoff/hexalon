@@ -100,8 +100,8 @@ impl Grid {
         let ori = &self.orientation;
 
         let pt = Vec2 {
-            x: pos.x / HEX_SIZE,
-            y: pos.y / HEX_SIZE,
+            x: pos.x / (HEX_SIZE + HEX_SPACING),
+            y: pos.y / (HEX_SIZE + HEX_SPACING),
         };
 
         let q = ori.b0 * pt.x + ori.b1 * pt.y;
