@@ -1,6 +1,5 @@
 use std::ops;
 
-use crate::grid::*;
 use bevy::{math::vec4, prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_egui::egui::lerp;
 use bevy_mod_picking::{prelude::*, PickableBundle};
