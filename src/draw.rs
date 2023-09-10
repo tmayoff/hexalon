@@ -32,7 +32,7 @@ impl Default for Draw {
     fn default() -> Self {
         Self {
             draw_mode: DrawMode::Cell,
-            color: Color::WHITE,
+            color: Color::BLUE,
             start_cell: None,
             last_hint: Vec::new(),
         }

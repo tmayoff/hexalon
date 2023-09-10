@@ -4,6 +4,7 @@ extern crate lazy_static;
 mod cell;
 mod draw;
 mod grid;
+mod token;
 mod ui;
 
 use bevy::{audio::AudioPlugin, prelude::*};
@@ -37,8 +38,9 @@ fn main() {
             EguiPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(Update, (ui::gui, draw::on_draw))
+        .add_systems(Update, (ui::gui, draw::on_draw, token::on_token_event))
         .add_event::<cell::CellEvent>()
+        .add_event::<token::TokenEvent>()
         .run();
 }
 
