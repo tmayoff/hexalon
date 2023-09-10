@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    cell::{self, Cell, CellEvent},
-    grid::{self, Grid},
+    cell::{Cell, CellEvent},
+    grid::{Grid, HEX_HOVER_COLOR},
 };
 
 #[derive(PartialEq, Eq)]
@@ -39,6 +39,92 @@ impl Default for Draw {
     }
 }
 
+impl Draw {
+    fn reset_hints(
+        &mut self,
+        cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+    ) {
+        for cell in &self.last_hint {
+            let (c, _) = cell_q.get(*cell).unwrap();
+            self.draw_cell_color(cell, c.color, cell_q, materials, false);
+        }
+
+        self.last_hint.clear();
+    }
+
+    fn draw_box(
+        &mut self,
+        start: &Entity,
+        end: &Entity,
+        cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+        grid: &Grid,
+        hint: bool,
+    ) {
+        let start = cell_q.get(*start).unwrap();
+        let end = cell_q.get(*end).unwrap();
+
+        let cells = grid.get_cells_in_box(&start.0.pos, &end.0.pos);
+
+        for cell in &cells {
+            self.draw_cell(cell, cell_q, materials, hint);
+        }
+
+        self.last_hint = cells;
+    }
+
+    fn draw_line(
+        &mut self,
+        start: &Entity,
+        end: &Entity,
+        cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+        grid: &Grid,
+        hint: bool,
+    ) {
+        let start = cell_q.get(*start).unwrap().0;
+        let end = cell_q.get(*end).unwrap().0;
+
+        let cells = grid.get_cells_in_line(&start.pos, &end.pos);
+
+        for cell in &cells {
+            self.draw_cell(cell, cell_q, materials, hint);
+        }
+
+        self.last_hint = cells;
+    }
+
+    fn draw_cell(
+        &self,
+        cell: &Entity,
+        cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+        hint: bool,
+    ) {
+        let color = if hint { *HEX_HOVER_COLOR } else { self.color };
+        self.draw_cell_color(cell, color, cell_q, materials, hint);
+    }
+
+    fn draw_cell_color(
+        &self,
+        cell: &Entity,
+        color: Color,
+        cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+        hint: bool,
+    ) {
+        let (mut cell, mat) = cell_q.get_mut(*cell).unwrap();
+        let mat = materials.get_mut(mat).unwrap();
+
+        mat.color = color;
+
+        if !hint {
+            cell.color = color;
+        }
+    }
+}
+
 pub fn on_draw(
     mut draw_event: EventReader<CellEvent>,
     mut draw_q: Query<&mut Draw>,
@@ -55,86 +141,44 @@ pub fn on_draw(
                 draw.start_cell = Some(*cell);
 
                 if draw.draw_mode == DrawMode::Cell {
-                    draw_cell(cell, draw.color, &mut cell_q, &mut materials);
+                    draw.draw_cell(cell, &mut cell_q, &mut materials, false);
                 }
             }
             CellEvent::Released(cell) => {
-                if let Some(start_cell) = draw.start_cell {
-                    draw_line(
-                        &start_cell,
-                        cell,
-                        draw.color,
-                        &mut cell_q,
-                        &mut materials,
-                        &mut draw,
-                        grid,
-                    );
+                if draw.draw_mode == DrawMode::Line {
+                    if let Some(start_cell) = draw.start_cell {
+                        draw.draw_line(&start_cell, cell, &mut cell_q, &mut materials, grid, false);
+                    }
+                    draw.last_hint = Vec::new();
+                } else if draw.draw_mode == DrawMode::Box {
+                    if let Some(start_cell) = draw.start_cell {
+                        draw.draw_box(&start_cell, cell, &mut cell_q, &mut materials, grid, false);
+                    }
                 }
+
                 draw.start_cell = None;
-                draw.last_hint = Vec::new();
             }
             CellEvent::Over(cell) => match draw.draw_mode {
                 DrawMode::Cell => {
                     if draw.start_cell.is_some() {
-                        draw_cell(cell, draw.color, &mut cell_q, &mut materials)
+                        draw.draw_cell(cell, &mut cell_q, &mut materials, false)
                     }
                 }
-                DrawMode::Box => todo!("Draw Hints"),
-                DrawMode::Line => {
+                DrawMode::Box => {
+                    // Draw hints
+                    draw.reset_hints(&mut cell_q, &mut materials);
                     if let Some(start_cell) = draw.start_cell {
-                        draw_line(
-                            &start_cell,
-                            cell,
-                            *grid::HEX_HOVER_COLOR,
-                            &mut cell_q,
-                            &mut materials,
-                            &mut draw,
-                            grid,
-                        );
+                        draw.draw_box(&start_cell, cell, &mut cell_q, &mut materials, grid, true);
+                    }
+                }
+                DrawMode::Line => {
+                    // Draw hints
+                    draw.reset_hints(&mut cell_q, &mut materials);
+                    if let Some(start_cell) = draw.start_cell {
+                        draw.draw_line(&start_cell, cell, &mut cell_q, &mut materials, grid, true);
                     }
                 }
             },
         }
     }
-}
-
-fn draw_cell(
-    cell: &Entity,
-    color: Color,
-    cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-) {
-    let (mut cell, mat) = cell_q.get_mut(*cell).unwrap();
-    let mat = materials.get_mut(mat).unwrap();
-    cell.color_managed = true;
-    mat.color = color;
-}
-
-fn draw_line(
-    start: &Entity,
-    end: &Entity,
-    color: Color,
-    cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-    draw: &mut Draw,
-    grid: &Grid,
-) {
-    let start = cell_q.get(*start).unwrap().0;
-    let end = cell_q.get(*end).unwrap().0;
-
-    let cells = grid.get_cells_in_line(&start.pos, &end.pos);
-
-    for cell in &draw.last_hint {
-        draw_cell(cell, *cell::HEX_COLOR, cell_q, materials);
-    }
-
-    for cell in &cells {
-        draw_cell(cell, color, cell_q, materials);
-    }
-
-    draw.last_hint = cells;
-}
-
-fn draw_box() {
-    todo!();
 }
