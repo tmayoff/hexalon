@@ -1,3 +1,5 @@
+use std::{cmp::max, collections::HashMap};
+
 use crate::cell::{Cell, HexCoord};
 
 use bevy::{prelude::*, sprite::ColorMaterial};
@@ -24,7 +26,7 @@ lazy_static! {
 #[derive(Component)]
 pub struct Grid {
     pub size: i32,
-    pub cells: Vec<Vec<Entity>>,
+    pub cells: HashMap<HexCoord, Entity>,
 }
 
 impl Grid {
@@ -34,79 +36,85 @@ impl Grid {
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
     ) {
-        let horizontal_spacing: f32 = (*HEX_GRID_HORIZONTAL_OFFSET * HEX_SIZE) + HEX_SPACING;
-        let vertical_spacing: f32 = 1.5 * HEX_SIZE + HEX_SPACING;
-
         let mut grid = Grid {
             size,
-            cells: Vec::new(),
+            cells: HashMap::new(),
         };
 
-        let mut children = vec![];
+        let left: i32 = -size / 2;
+        let right: i32 = size / 2;
+        let top: i32 = -size / 2;
+        let bottom: i32 = size / 2;
 
-        for x in -(size / 2)..(size / 2) {
-            grid.cells.push(Vec::new());
-            for y in -(size / 2)..(size / 2) {
-                let x_offset = if y % 2 == 0 {
-                    horizontal_spacing / 2.0
-                } else {
-                    0.0
-                };
+        let f0: f32 = 3.0_f32.sqrt();
+        let f1: f32 = 3.0_f32.sqrt() / 2.0;
+        let f2: f32 = 0.0;
+        let f3: f32 = 3.0 / 2.0;
 
-                let x_pos = x as f32 * horizontal_spacing + x_offset;
-                let y_pos = y as f32 * vertical_spacing;
+        for r in top..=bottom {
+            let offset_r = (r as f32 / 2.0).floor() as i32;
+
+            for q in (left - offset_r)..=(right - offset_r) {
+                let x_pos = (f0 * q as f32 + f1 * r as f32) * (HEX_SIZE + HEX_SPACING);
+                let y_pos = (f2 * q as f32 + f3 * r as f32) * (HEX_SIZE + HEX_SPACING);
 
                 let id = Cell::create(
                     Vec2::new(x_pos, y_pos),
                     HEX_SIZE,
-                    HexCoord {
-                        q: x + (size / 2),
-                        r: y + (size / 2),
-                    },
+                    HexCoord { q, r },
                     commands,
                     meshes,
                     materials,
                 );
 
-                grid.cells[(x + (size / 2)) as usize].push(id);
-                children.push(id);
+                grid.cells.insert(HexCoord { q, r }, id);
             }
         }
 
         commands.spawn(grid);
     }
 
-    pub fn get_cells_in_line(&self, start: &HexCoord, end: &HexCoord) -> Vec<Entity> {
-        let mut cells = Vec::new();
+    pub fn get_cells_in_box(&self, start: &HexCoord, end: &HexCoord) -> Vec<Entity> {
+        let mut cells = vec![
+            *self.cells.get(start).unwrap(),
+            *self.cells.get(end).unwrap(),
+        ];
 
-        let dx = (end.q - start.q).abs();
-        let dy = (end.r - start.r).abs();
-        let sx = if start.q < end.q { 1 } else { -1 };
-        let sy = if start.r < end.r { 1 } else { -1 };
-        let mut err = dx - dy;
+        let c1 = HexCoord {
+            q: start.q,
+            r: end.r,
+        };
 
-        let mut q = start.q;
-        let mut r = start.r;
+        let c2 = HexCoord {
+            q: end.q,
+            r: start.r,
+        };
 
-        while q != end.q || r != end.r {
-            cells.push(self.cells[q as usize][r as usize]);
-            let e2 = 2 * err;
-            if e2 > -dy {
-                err -= dy;
-                q += sx;
-            }
-            if e2 < dx {
-                err += dx;
-                r += sy;
-            }
-        }
-
-        cells.push(self.cells[end.q as usize][end.r as usize]); // Ensure the end point is included
+        cells.append(&mut self.get_cells_in_line(start, &c1));
+        cells.append(&mut self.get_cells_in_line(start, &c2));
+        cells.append(&mut self.get_cells_in_line(&c1, end));
+        cells.append(&mut self.get_cells_in_line(&c2, end));
 
         cells
     }
 
-    fn world_pos_to_arr_pos(&self, pos: [i32; 2]) -> [i32; 2] {
-        [pos[0] + (self.size / 2), pos[1] + (self.size / 2)]
+    pub fn get_cells_in_line(&self, start: &HexCoord, end: &HexCoord) -> Vec<Entity> {
+        let mut cells = Vec::new();
+
+        let n = Self::axial_distance(start, end);
+        let step = 1.0 / max(n, 1) as f32;
+        for i in 0..n {
+            let lerped = HexCoord::lerp(start, end, step * i as f32);
+            cells.push(self.cells.get(&lerped).unwrap().to_owned());
+        }
+
+        cells.push(self.cells.get(end).unwrap().to_owned());
+
+        cells
+    }
+
+    fn axial_distance(a: &HexCoord, b: &HexCoord) -> i32 {
+        let vec = a - b;
+        (vec.q.abs() + vec.r.abs() + (vec.q + vec.r).abs()) / 2
     }
 }
