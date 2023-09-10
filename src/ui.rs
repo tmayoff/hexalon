@@ -8,6 +8,7 @@ pub fn gui(
     mut contexts: EguiContexts,
     mut draw_q: Query<&mut Draw>,
     mut token_event: EventWriter<TokenEvent>,
+    cam_q: Query<&Transform, With<Camera2d>>,
 ) {
     let mut draw = draw_q.single_mut();
 
@@ -38,13 +39,14 @@ pub fn gui(
 
             ui.heading("Tokens");
             if ui.button("Spawn Enemy").clicked() {
-                // TODO spawn enemy token
-                token_event.send(TokenEvent::Spawn)
+                let cam = cam_q.single();
+
+                token_event.send(TokenEvent::Spawn(*cam))
             }
 
             if ui.button("Spawn Party Member").clicked() {
-                // TODO Spawn Party token
-                token_event.send(TokenEvent::Spawn)
+                let cam = cam_q.single();
+                token_event.send(TokenEvent::Spawn(*cam))
             }
         });
     });

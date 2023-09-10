@@ -4,6 +4,7 @@ extern crate lazy_static;
 mod cell;
 mod draw;
 mod grid;
+mod hex;
 mod token;
 mod ui;
 
