@@ -2,7 +2,7 @@ use std::ops;
 
 use bevy_egui::egui::lerp;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 pub struct HexCoord {
     pub q: i32,
     pub r: i32,
@@ -42,6 +42,11 @@ impl HexCoord {
             q: q as i32,
             r: r as i32,
         }
+    }
+
+    pub fn distance(&self, other: &HexCoord) -> i32 {
+        let vec = self - other;
+        (vec.q.abs() + vec.r.abs() + (vec.q + vec.r).abs()) / 2
     }
 }
 

@@ -43,6 +43,7 @@ struct Orientation {
 pub struct Grid {
     pub size: i32,
     pub cells: HashMap<HexCoord, Entity>,
+    pub tokens: HashMap<HexCoord, Entity>,
 
     orientation: Orientation,
     // forward: Mat4,
@@ -58,6 +59,7 @@ impl Grid {
         let mut grid = Grid {
             size,
             cells: HashMap::new(),
+            tokens: HashMap::new(),
 
             orientation: Orientation {
                 f0: 3.0_f32.sqrt(),
@@ -146,7 +148,7 @@ impl Grid {
     pub fn get_cells_in_line(&self, start: &HexCoord, end: &HexCoord) -> Vec<Entity> {
         let mut cells = Vec::new();
 
-        let n = Self::axial_distance(start, end);
+        let n = start.distance(end);
         let step = 1.0 / max(n, 1) as f32;
         for i in 0..n {
             let lerped = HexCoord::lerp(start, end, step * i as f32);
@@ -156,11 +158,6 @@ impl Grid {
         cells.push(self.cells.get(end).unwrap().to_owned());
 
         cells
-    }
-
-    fn axial_distance(a: &HexCoord, b: &HexCoord) -> i32 {
-        let vec = a - b;
-        (vec.q.abs() + vec.r.abs() + (vec.q + vec.r).abs()) / 2
     }
 }
 
@@ -173,6 +170,7 @@ mod tests {
         let grid = Grid {
             size: 250,
             cells: HashMap::new(),
+            tokens: HashMap::new(),
 
             orientation: Orientation {
                 f0: 3.0_f32.sqrt(),
