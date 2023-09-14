@@ -57,7 +57,7 @@ impl Token {
 
 fn on_token_dropped(
     event: Listener<Pointer<DragEnd>>,
-    mut token_q: &Query<(&mut Token, &mut Transform)>,
+    mut token_q: Query<(&mut Token, &mut Transform)>,
     grid_q: Query<&Grid>,
 ) {
     let grid = grid_q.single();
