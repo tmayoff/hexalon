@@ -43,7 +43,6 @@ struct Orientation {
 pub struct Grid {
     pub size: i32,
     pub cells: HashMap<HexCoord, Entity>,
-    pub tokens: HashMap<HexCoord, Entity>,
 
     orientation: Orientation,
     // forward: Mat4,

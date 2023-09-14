@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::Pickable;
+use bevy_mod_picking::prelude::*;
 
 use crate::{grid::Grid, hex::HexCoord};
 
@@ -31,20 +31,57 @@ impl Token {
                 },
                 ..Default::default()
             },
-            Pickable::default(),
+            On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
+                transform.translation += Vec2 {
+                    x: drag.delta.x,
+                    y: -drag.delta.y,
+                }
+                .extend(0.0);
+            }),
+            On::<Pointer<DragEnd>>::run(on_token_dropped),
         ));
 
         entity.id()
     }
+
+    fn token_at(token_q: &Query<&Token>, coords: &HexCoord) -> bool {
+        for token in token_q.iter() {
+            if token.coords == *coords {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+fn on_token_dropped(
+    event: Listener<Pointer<DragEnd>>,
+    mut token_q: &Query<(&mut Token, &mut Transform)>,
+    grid_q: Query<&Grid>,
+) {
+    let grid = grid_q.single();
+
+    let (mut token, mut t) = token_q.get_mut(event.target).unwrap();
+
+    let hex_coords = grid.pos_to_hex_coord(&Vec2 {
+        x: t.translation.x,
+        y: t.translation.y,
+    });
+    let rounded_pos = grid.hex_coord_to_pos(&hex_coords);
+
+    t.translation = rounded_pos.extend(0.1);
+    token.coords = hex_coords;
 }
 
 pub fn on_token_event(
     mut event_reader: EventReader<TokenEvent>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut grid_q: Query<&mut Grid>,
+    grid_q: Query<&Grid>,
+    token_q: Query<&Token>,
 ) {
-    let mut grid = grid_q.single_mut();
+    let mut grid = grid_q.single();
 
     for e in event_reader.iter() {
         match e {
@@ -55,12 +92,11 @@ pub fn on_token_event(
                 };
 
                 let coords = grid.pos_to_hex_coord(&pos);
-                let existing = grid.tokens.get(&coords).is_some();
+                let existing = Token::token_at(&token_q, &coords);
 
                 if !existing {
                     let pos = grid.hex_coord_to_pos(&coords);
                     let entity = Token::create(&mut commands, &asset_server, pos, &coords);
-                    grid.tokens.insert(coords, entity);
                 } else {
                     log::error!("Token exists in that location");
                 }
