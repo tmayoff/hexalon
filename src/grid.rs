@@ -58,7 +58,6 @@ impl Grid {
         let mut grid = Grid {
             size,
             cells: HashMap::new(),
-            tokens: HashMap::new(),
 
             orientation: Orientation {
                 f0: 3.0_f32.sqrt(),
@@ -169,7 +168,6 @@ mod tests {
         let grid = Grid {
             size: 250,
             cells: HashMap::new(),
-            tokens: HashMap::new(),
 
             orientation: Orientation {
                 f0: 3.0_f32.sqrt(),
