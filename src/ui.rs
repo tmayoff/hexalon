@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::draw::{Draw, DrawMode};
-use crate::token::TokenEvent;
+use crate::token::{TokenEvent, TokenType};
 
 pub fn gui(
     mut contexts: EguiContexts,
@@ -41,12 +41,12 @@ pub fn gui(
             if ui.button("Spawn Enemy").clicked() {
                 let cam = cam_q.single();
 
-                token_event.send(TokenEvent::Spawn(*cam))
+                token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
             }
 
             if ui.button("Spawn Party Member").clicked() {
                 let cam = cam_q.single();
-                token_event.send(TokenEvent::Spawn(*cam))
+                token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
             }
         });
     });

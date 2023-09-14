@@ -8,7 +8,7 @@ use crate::{
 use bevy::{prelude::*, sprite::ColorMaterial};
 
 const HEX_SIZE: f32 = 35.0;
-const HEX_SPACING: f32 = 2.0;
+const HEX_SPACING: f32 = 1.0;
 
 lazy_static! {
     pub static ref HEX_HOVER_COLOR: Color = Color::Rgba {
@@ -150,10 +150,14 @@ impl Grid {
         let step = 1.0 / max(n, 1) as f32;
         for i in 0..n {
             let lerped = HexCoord::lerp(start, end, step * i as f32);
-            cells.push(self.cells.get(&lerped).unwrap().to_owned());
+            if let Some(cell) = self.cells.get(&lerped) {
+                cells.push(*cell);
+            }
         }
 
-        cells.push(self.cells.get(end).unwrap().to_owned());
+        if let Some(cell) = self.cells.get(end) {
+            cells.push(*cell);
+        }
 
         cells
     }

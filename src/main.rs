@@ -18,9 +18,9 @@ use grid::Grid;
 
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
-        red: 0.75,
-        green: 0.75,
-        blue: 0.75,
+        red: 0.25,
+        green: 0.25,
+        blue: 0.25,
         alpha: 1.0
     };
     static ref CLEAR_COLOR: Color = *HEX_OUTLINE_COLOR;
@@ -51,7 +51,7 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Setup Grid
-    const GRID_SIZE: i32 = 250;
+    const GRID_SIZE: i32 = 10;
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
 
     commands.spawn(Draw::default());

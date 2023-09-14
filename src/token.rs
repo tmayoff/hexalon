@@ -3,9 +3,14 @@ use bevy_mod_picking::prelude::*;
 
 use crate::{grid::Grid, hex::HexCoord};
 
+pub enum TokenType {
+    Party,
+    Enemy,
+}
+
 #[derive(Event)]
 pub enum TokenEvent {
-    Spawn(Transform),
+    Spawn((TokenType, Transform)),
 }
 
 #[derive(Component)]
@@ -17,16 +22,32 @@ impl Token {
     fn create(
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
+        token_type: &TokenType,
         pos: Vec2,
         coords: &HexCoord,
     ) -> Entity {
+        let texture;
+        let color;
+
+        match token_type {
+            TokenType::Party => {
+                texture = asset_server.load("sprites/shield-sword.png");
+                color = Color::BLUE;
+            }
+            TokenType::Enemy => {
+                texture = asset_server.load("sprites/skull.png");
+                color = Color::rgb(0.93, 0.13, 0.25);
+            }
+        }
+
         let entity = commands.spawn((
             Token { coords: *coords },
             SpriteBundle {
-                texture: asset_server.load("sprites/shield-sword.png"),
+                texture,
                 transform: Transform::from_translation(pos.extend(0.1)),
                 sprite: Sprite {
                     custom_size: Some(Vec2 { x: 55.0, y: 55.0 }),
+                    color,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -85,7 +106,7 @@ pub fn on_token_event(
 
     for e in event_reader.iter() {
         match e {
-            TokenEvent::Spawn(t) => {
+            TokenEvent::Spawn((token_type, t)) => {
                 let pos = Vec2 {
                     x: t.translation.x,
                     y: t.translation.y,
@@ -96,7 +117,7 @@ pub fn on_token_event(
 
                 if !existing {
                     let pos = grid.hex_coord_to_pos(&coords);
-                    Token::create(&mut commands, &asset_server, pos, &coords);
+                    Token::create(&mut commands, &asset_server, token_type, pos, &coords);
                 } else {
                     log::error!("Token exists in that location");
                 }
