@@ -81,7 +81,7 @@ pub fn on_token_event(
     grid_q: Query<&Grid>,
     token_q: Query<&Token>,
 ) {
-    let mut grid = grid_q.single();
+    let grid = grid_q.single();
 
     for e in event_reader.iter() {
         match e {
@@ -96,7 +96,7 @@ pub fn on_token_event(
 
                 if !existing {
                     let pos = grid.hex_coord_to_pos(&coords);
-                    let entity = Token::create(&mut commands, &asset_server, pos, &coords);
+                    Token::create(&mut commands, &asset_server, pos, &coords);
                 } else {
                     log::error!("Token exists in that location");
                 }
