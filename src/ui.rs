@@ -14,6 +14,17 @@ pub fn gui(
 
     let ctx = contexts.ctx_mut();
 
+    egui::TopBottomPanel::top("top").show(ctx, |ui| {
+        egui::menu::bar(ui, |ui| {
+            ui.menu_button(
+                "File",
+                |ui| {
+                    if ui.button("Open Obsidian project").clicked() {}
+                },
+            );
+        });
+    });
+
     egui::Window::new("Toolbox").show(ctx, |ui| {
         ui.vertical(|ui| {
             ui.heading("Drawing");
