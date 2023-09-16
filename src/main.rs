@@ -5,16 +5,20 @@ mod cell;
 mod draw;
 mod grid;
 mod hex;
+mod initiative_tracker;
 mod token;
 mod ui;
 
 use bevy::{audio::AudioPlugin, prelude::*};
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
+use bevy_mod_reqwest::{reqwest, ReqwestBytesResult, ReqwestPlugin, ReqwestRequest};
 use bevy_pancam::{PanCam, PanCamPlugin};
 
 use draw::Draw;
 use grid::Grid;
+
+use crate::initiative_tracker::Data;
 
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
@@ -37,13 +41,30 @@ fn main() {
                 .disable::<DefaultHighlightingPlugin>(),
             PanCamPlugin,
             EguiPlugin,
+            ReqwestPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(Update, (ui::gui, draw::on_draw, token::on_token_event))
+        .add_systems(
+            Update,
+            (
+                send_request,
+                handle_response,
+                ui::gui,
+                draw::on_draw,
+                token::on_token_event,
+            ),
+        )
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
+        .insert_resource(ReqTimer(Timer::new(
+            std::time::Duration::from_secs(1),
+            TimerMode::Repeating,
+        )))
         .run();
 }
+
+#[derive(Resource)]
+struct ReqTimer(pub Timer);
 
 fn setup(
     mut commands: Commands,
@@ -65,4 +86,24 @@ fn setup(
         },
         RaycastPickCamera::default(),
     ));
+}
+
+fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
+    if timer.0.tick(time.delta()).just_finished() {
+        let req = reqwest::Request::new(
+            reqwest::Method::GET,
+            "http://127.0.0.1:8080/ttrpg_data".try_into().unwrap(),
+        );
+
+        commands.spawn(ReqwestRequest::new(req));
+    }
+}
+
+fn handle_response(mut commands: Commands, results: Query<(Entity, &ReqwestBytesResult)>) {
+    for (e, res) in results.iter() {
+        let j = res.deserialize_json::<Data>().unwrap();
+        // TODO pass this data somewhere
+        log::info!("{:?}", j.state);
+        commands.entity(e).despawn_recursive();
+    }
 }
