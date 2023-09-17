@@ -95,6 +95,26 @@ fn on_token_dropped(
     token.coords = hex_coords;
 }
 
+fn find_empty_cells(token_q: &Query<&Token>, grid: &Grid, start: HexCoord) -> Option<HexCoord> {
+    if !Token::token_at(token_q, &start) {
+        return Some(start);
+    }
+
+    for n in grid.get_neighbours(&start).iter() {
+        if !Token::token_at(token_q, n) {
+            return Some(n.to_owned());
+        }
+    }
+
+    for n in grid.get_neighbours(&start).iter() {
+        if let Some(n) = find_empty_cells(token_q, grid, n.to_owned()) {
+            return Some(n);
+        }
+    }
+
+    None
+}
+
 pub fn on_token_event(
     mut event_reader: EventReader<TokenEvent>,
     mut commands: Commands,
@@ -112,14 +132,14 @@ pub fn on_token_event(
                     y: t.translation.y,
                 };
 
-                let coords = grid.pos_to_hex_coord(&pos);
-                let existing = Token::token_at(&token_q, &coords);
+                let coords = find_empty_cells(&token_q, grid, grid.pos_to_hex_coord(&pos));
 
-                if !existing {
-                    let pos = grid.hex_coord_to_pos(&coords);
-                    Token::create(&mut commands, &asset_server, token_type, pos, &coords);
-                } else {
-                    log::error!("Token exists in that location");
+                match coords {
+                    Some(coords) => {
+                        let pos = grid.hex_coord_to_pos(&coords);
+                        Token::create(&mut commands, &asset_server, token_type, pos, &coords);
+                    }
+                    None => log::error!("Token exists in that location"),
                 }
             }
         };
