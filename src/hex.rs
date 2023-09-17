@@ -60,3 +60,25 @@ impl ops::Sub<&HexCoord> for &HexCoord {
         }
     }
 }
+
+impl ops::Add<HexCoord> for HexCoord {
+    type Output = HexCoord;
+
+    fn add(self, rhs: HexCoord) -> Self::Output {
+        HexCoord {
+            q: self.q + rhs.q,
+            r: self.r + rhs.r,
+        }
+    }
+}
+
+impl ops::Add<&HexCoord> for &HexCoord {
+    type Output = HexCoord;
+
+    fn add(self, rhs: &HexCoord) -> Self::Output {
+        HexCoord {
+            q: self.q + rhs.q,
+            r: self.r + rhs.r,
+        }
+    }
+}

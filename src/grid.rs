@@ -96,6 +96,27 @@ impl Grid {
         commands.spawn(grid);
     }
 
+    pub fn get_neighbours(&self, pos: &HexCoord) -> Vec<HexCoord> {
+        let directions = [
+            HexCoord { q: 1, r: 0 },
+            HexCoord { q: 1, r: -1 },
+            HexCoord { q: 0, r: -1 },
+            HexCoord { q: -1, r: 0 },
+            HexCoord { q: -1, r: 1 },
+            HexCoord { q: 0, r: 1 },
+        ];
+
+        let mut neighbours = Vec::new();
+
+        directions.iter().for_each(|d| {
+            if self.cells.contains_key(&(pos + d)) {
+                neighbours.push(pos + d);
+            }
+        });
+
+        neighbours
+    }
+
     pub fn pos_to_hex_coord(&self, pos: &Vec2) -> HexCoord {
         let ori = &self.orientation;
 
