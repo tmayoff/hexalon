@@ -101,9 +101,9 @@ fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTi
 
 fn handle_response(mut commands: Commands, results: Query<(Entity, &ReqwestBytesResult)>) {
     for (e, res) in results.iter() {
-        let j = res.deserialize_json::<Data>().unwrap();
+        // let j = res.deserialize_json::<Data>().unwrap();
         // TODO pass this data somewhere
-        log::info!("{:?}", j.state);
-        commands.entity(e).despawn_recursive();
+        // log::info!("{:?}", j.state);
+        // commands.entity(e).despawn_recursive();
     }
 }
