@@ -2,15 +2,25 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::draw::{Draw, DrawMode};
+use crate::initiative_tracker::Tracker;
 use crate::token::{TokenEvent, TokenType};
+
+#[derive(Component, Default)]
+pub struct UI {
+    selected_party: Option<String>,
+}
 
 pub fn gui(
     mut contexts: EguiContexts,
+    mut ui_q: Query<&mut UI>,
     mut draw_q: Query<&mut Draw>,
     mut token_event: EventWriter<TokenEvent>,
     cam_q: Query<&Transform, With<Camera2d>>,
+    tracker_q: Query<&Tracker>,
 ) {
+    let mut ui_state = ui_q.single_mut();
     let mut draw = draw_q.single_mut();
+    let tracker = tracker_q.single();
 
     let ctx = contexts.ctx_mut();
 
@@ -49,15 +59,17 @@ pub fn gui(
                 });
 
             ui.heading("Tokens");
-            if ui.button("Spawn Enemy").clicked() {
-                let cam = cam_q.single();
-
-                token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
-            }
-
-            if ui.button("Spawn Party Member").clicked() {
-                let cam = cam_q.single();
-                token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
+            if let Some(tracker_data) = &tracker.data {
+                if ui.button("Load State").clicked() {
+                    let cam = cam_q.single();
+                    tracker_data.state.creatures.iter().for_each(|c| {
+                        if c.player.is_some() {
+                            token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
+                        } else {
+                            token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
+                        }
+                    });
+                }
             }
         });
     });

@@ -18,7 +18,10 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 use draw::Draw;
 use grid::Grid;
 
-use crate::initiative_tracker::Data;
+use crate::{
+    initiative_tracker::{Data, Tracker},
+    ui::UI,
+};
 
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
@@ -76,6 +79,8 @@ fn setup(
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
 
     commands.spawn(Draw::default());
+    commands.spawn(Tracker { data: None });
+    commands.spawn(UI::default());
 
     // Setup Camera
     commands.spawn((
@@ -99,11 +104,17 @@ fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTi
     }
 }
 
-fn handle_response(mut commands: Commands, results: Query<(Entity, &ReqwestBytesResult)>) {
+fn handle_response(
+    mut commands: Commands,
+    results: Query<(Entity, &ReqwestBytesResult)>,
+    mut tracker_q: Query<&mut Tracker>,
+) {
+    let mut tracker = tracker_q.single_mut();
+
     for (e, res) in results.iter() {
         let j = res.deserialize_json::<Data>().unwrap();
-        // TODO pass this data somewhere
-        log::info!("{:?}", j.state);
+
         commands.entity(e).despawn_recursive();
+        tracker.data = Some(j);
     }
 }

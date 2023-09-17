@@ -1,3 +1,4 @@
+use bevy::prelude::Component;
 use serde::Deserialize;
 
 // TODO consider cleaning these structs up. Especially when it comes to the initiative vs non initiative characters
@@ -9,8 +10,6 @@ pub struct Player {
     hp: i32,
     level: i32,
     modifier: i32,
-    player: bool,
-    initiative: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,26 +22,34 @@ pub struct Monster {
     currentAC: i32,
     currentHP: i32,
     enabled: bool,
-
-    initiative: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Party {
-    name: String,
-    players: Vec<String>,
+    pub name: String,
+    pub players: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum Creature {
+pub enum CreatureType {
     Player(Player),
     Monster(Monster),
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Creature {
+    pub id: String,
+    pub initiative: i32,
+    pub player: Option<bool>,
+
+    #[serde(flatten)]
+    pub creature: CreatureType,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct State {
-    creatures: Vec<Creature>,
+    pub creatures: Vec<Creature>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,4 +57,9 @@ pub struct Data {
     pub players: Vec<Player>,
     pub parties: Vec<Party>,
     pub state: State,
+}
+
+#[derive(Component)]
+pub struct Tracker {
+    pub data: Option<Data>,
 }
