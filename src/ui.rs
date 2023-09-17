@@ -3,22 +3,17 @@ use bevy_egui::{egui, EguiContexts};
 
 use crate::draw::{Draw, DrawMode};
 use crate::initiative_tracker::Tracker;
-use crate::token::{TokenEvent, TokenType};
-
-#[derive(Component, Default)]
-pub struct UI {
-    selected_party: Option<String>,
-}
+use crate::token::{Token, TokenEvent, TokenType};
 
 pub fn gui(
+    mut commands: Commands,
     mut contexts: EguiContexts,
-    mut ui_q: Query<&mut UI>,
     mut draw_q: Query<&mut Draw>,
     mut token_event: EventWriter<TokenEvent>,
     cam_q: Query<&Transform, With<Camera2d>>,
+    token_q: Query<Entity, With<Token>>,
     tracker_q: Query<&Tracker>,
 ) {
-    let mut ui_state = ui_q.single_mut();
     let mut draw = draw_q.single_mut();
     let tracker = tracker_q.single();
 
@@ -59,17 +54,24 @@ pub fn gui(
                 });
 
             ui.heading("Tokens");
-            if let Some(tracker_data) = &tracker.data {
-                if ui.button("Load State").clicked() {
-                    let cam = cam_q.single();
-                    tracker_data.state.creatures.iter().for_each(|c| {
-                        if c.player.is_some() {
-                            token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
-                        } else {
-                            token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
-                        }
-                    });
+
+            if token_q.is_empty() {
+                if let Some(tracker_data) = &tracker.data {
+                    if ui.button("Load State").clicked() {
+                        let cam = cam_q.single();
+                        tracker_data.state.creatures.iter().for_each(|c| {
+                            if c.player.is_some() {
+                                token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
+                            } else {
+                                token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
+                            }
+                        });
+                    }
                 }
+            } else if ui.button("Clear state").clicked() {
+                token_q
+                    .iter()
+                    .for_each(|e| commands.entity(e).despawn_recursive())
             }
         });
     });
