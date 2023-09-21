@@ -64,8 +64,16 @@ pub fn gui(
                             .creatures
                             .iter()
                             .map(|c| match c.player {
-                                Some(_) => (TokenType::Party, *cam),
-                                None => (TokenType::Enemy, *cam),
+                                Some(_) => (
+                                    c.name.split(' ').next().unwrap().to_owned(),
+                                    TokenType::Party,
+                                    *cam,
+                                ),
+                                None => (
+                                    c.name.split(' ').next().unwrap().to_owned(),
+                                    TokenType::Enemy,
+                                    *cam,
+                                ),
                             })
                             .collect();
                         token_event.send(TokenEvent::BatchSpawn(batches))

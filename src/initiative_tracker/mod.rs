@@ -5,7 +5,6 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct Player {
-    name: String,
     ac: i32,
     hp: i32,
     level: i32,
@@ -14,7 +13,6 @@ pub struct Player {
 
 #[derive(Debug, Deserialize)]
 pub struct Monster {
-    name: String,
     display: Option<String>,
     ac: i32,
     hp: i32,
@@ -40,6 +38,7 @@ pub enum CreatureType {
 #[derive(Debug, Deserialize)]
 pub struct Creature {
     pub id: String,
+    pub name: String,
     pub initiative: i32,
     pub player: Option<bool>,
 

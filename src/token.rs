@@ -10,12 +10,13 @@ pub enum TokenType {
 
 #[derive(Event)]
 pub enum TokenEvent {
-    Spawn((TokenType, Transform)),
-    BatchSpawn(Vec<(TokenType, Transform)>),
+    Spawn((String, TokenType, Transform)),
+    BatchSpawn(Vec<(String, TokenType, Transform)>),
 }
 
 #[derive(Component)]
 pub struct Token {
+    name: String,
     coords: HexCoord,
 }
 
@@ -24,6 +25,7 @@ impl Token {
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
         token_type: &TokenType,
+        name: String,
         pos: Vec2,
         coords: &HexCoord,
     ) -> Entity {
@@ -41,29 +43,52 @@ impl Token {
             }
         }
 
-        let entity = commands.spawn((
-            Token { coords: *coords },
-            SpriteBundle {
-                texture,
-                transform: Transform::from_translation(pos.extend(0.1)),
-                sprite: Sprite {
-                    custom_size: Some(Vec2 { x: 55.0, y: 55.0 }),
-                    color,
+        let entity = commands
+            .spawn((
+                Token {
+                    coords: *coords,
+                    name: name.clone(),
+                },
+                SpriteBundle {
+                    texture,
+                    transform: Transform::from_translation(pos.extend(0.1)),
+                    sprite: Sprite {
+                        custom_size: Some(Vec2 { x: 55.0, y: 55.0 }),
+                        color,
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                ..Default::default()
-            },
-            On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
-                transform.translation += Vec2 {
-                    x: drag.delta.x,
-                    y: -drag.delta.y,
-                }
-                .extend(0.0);
-            }),
-            On::<Pointer<DragEnd>>::run(on_token_dropped),
-        ));
+                On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
+                    transform.translation += Vec2 {
+                        x: drag.delta.x,
+                        y: -drag.delta.y,
+                    }
+                    .extend(0.0);
+                }),
+                On::<Pointer<DragEnd>>::run(on_token_dropped),
+            ))
+            .id();
 
-        entity.id()
+        let text = commands
+            .spawn(Text2dBundle {
+                text: Text::from_section(
+                    name,
+                    TextStyle {
+                        font: asset_server.load("fonts/Roboto-Regular.ttf"),
+                        font_size: 30.0,
+                        color: Color::BLACK,
+                    },
+                )
+                .with_alignment(TextAlignment::Center),
+                transform: Transform::from_translation(pos.extend(0.1)),
+                ..Default::default()
+            })
+            .id();
+
+        commands.entity(entity).add_child(text);
+
+        entity
     }
 }
 
@@ -121,7 +146,7 @@ pub fn on_token_event(
 
     for e in event_reader.iter() {
         match e {
-            TokenEvent::Spawn((token_type, t)) => {
+            TokenEvent::Spawn((name, token_type, t)) => {
                 let pos = Vec2 {
                     x: t.translation.x,
                     y: t.translation.y,
@@ -134,14 +159,21 @@ pub fn on_token_event(
                 match coords {
                     Some(coords) => {
                         let pos = grid.hex_coord_to_pos(&coords);
-                        Token::create(&mut commands, &asset_server, token_type, pos, &coords);
+                        Token::create(
+                            &mut commands,
+                            &asset_server,
+                            token_type,
+                            name.to_owned(),
+                            pos,
+                            &coords,
+                        );
                     }
                     None => log::error!("Token exists in that location"),
                 }
             }
             TokenEvent::BatchSpawn(toks) => {
                 let mut taken_coords = token_q.iter().map(|t| t.coords).collect();
-                for (token_type, t) in toks {
+                for (name, token_type, t) in toks {
                     let pos = Vec2 {
                         x: t.translation.x,
                         y: t.translation.y,
@@ -152,7 +184,14 @@ pub fn on_token_event(
                     match coords {
                         Some(coords) => {
                             let pos = grid.hex_coord_to_pos(&coords);
-                            Token::create(&mut commands, &asset_server, token_type, pos, &coords);
+                            Token::create(
+                                &mut commands,
+                                &asset_server,
+                                token_type,
+                                name.to_owned(),
+                                pos,
+                                &coords,
+                            );
                             taken_coords.push(coords);
                         }
                         None => log::error!("Token exists in that location"),
