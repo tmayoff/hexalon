@@ -20,7 +20,11 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "warn,ttrpg=trace",
+                "CARGO_MANIFEST_DIR": "${workspaceFolder}"
+            }
         },
         {
             "type": "lldb",
