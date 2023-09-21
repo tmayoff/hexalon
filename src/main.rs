@@ -110,10 +110,10 @@ fn handle_response(
     for (e, res) in results.iter() {
         match &res.0 {
             Ok(_) => {
-                commands.entity(e).despawn_recursive();
                 tracker.data = res.deserialize_json::<Data>();
             }
             Err(e) => log::error!("{:?}", e),
         }
+        commands.entity(e).despawn_recursive();
     }
 }
