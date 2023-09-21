@@ -79,9 +79,12 @@ impl Token {
                         font_size: 30.0,
                         color: Color::BLACK,
                     },
-                )
-                .with_alignment(TextAlignment::Center),
-                transform: Transform::from_translation(pos.extend(0.1)),
+                ),
+                transform: Transform::from_translation(Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.1,
+                }),
                 ..Default::default()
             })
             .id();
