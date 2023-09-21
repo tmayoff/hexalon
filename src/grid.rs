@@ -27,6 +27,7 @@ lazy_static! {
 }
 
 // TODO replace with normal matrices
+#[derive(Default)]
 struct Orientation {
     f0: f32,
     f1: f32,
@@ -39,7 +40,7 @@ struct Orientation {
     b3: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Grid {
     pub size: i32,
     pub cells: HashMap<HexCoord, Entity>,
