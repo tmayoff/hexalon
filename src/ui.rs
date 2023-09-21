@@ -59,13 +59,16 @@ pub fn gui(
                 if let Some(tracker_data) = &tracker.data {
                     if ui.button("Load State").clicked() {
                         let cam = cam_q.single();
-                        tracker_data.state.creatures.iter().for_each(|c| {
-                            if c.player.is_some() {
-                                token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
-                            } else {
-                                token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
-                            }
-                        });
+                        let batches = tracker_data
+                            .state
+                            .creatures
+                            .iter()
+                            .map(|c| match c.player {
+                                Some(_) => (TokenType::Party, *cam),
+                                None => (TokenType::Enemy, *cam),
+                            })
+                            .collect();
+                        token_event.send(TokenEvent::BatchSpawn(batches))
                     }
                 }
             } else if ui.button("Clear state").clicked() {

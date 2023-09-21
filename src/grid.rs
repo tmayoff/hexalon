@@ -70,6 +70,8 @@ impl Grid {
                 b2: 0.0,
                 b3: 2.0 / 3.0,
             },
+
+            ..Default::default()
         };
 
         let left: i32 = -size / 2;
@@ -205,6 +207,8 @@ mod tests {
                 b2: 0.0,
                 b3: 2.0 / 3.0,
             },
+
+            ..Default::default()
         };
 
         let test_coord = HexCoord { q: 10, r: 10 };

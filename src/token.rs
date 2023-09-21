@@ -11,6 +11,7 @@ pub enum TokenType {
 #[derive(Event)]
 pub enum TokenEvent {
     Spawn((TokenType, Transform)),
+    BatchSpawn(Vec<(TokenType, Transform)>),
 }
 
 #[derive(Component)]
@@ -64,16 +65,6 @@ impl Token {
 
         entity.id()
     }
-
-    fn token_at(token_q: &Query<&Token>, coords: &HexCoord) -> bool {
-        for token in token_q.iter() {
-            if token.coords == *coords {
-                return true;
-            }
-        }
-
-        false
-    }
 }
 
 fn on_token_dropped(
@@ -95,19 +86,23 @@ fn on_token_dropped(
     token.coords = hex_coords;
 }
 
-fn find_empty_cells(token_q: &Query<&Token>, grid: &Grid, start: HexCoord) -> Option<HexCoord> {
-    if !Token::token_at(token_q, &start) {
+fn find_empty_cells(
+    taken_coords: &Vec<HexCoord>,
+    grid: &Grid,
+    start: HexCoord,
+) -> Option<HexCoord> {
+    if !taken_coords.iter().any(|t| t == &start) {
         return Some(start);
     }
 
     for n in grid.get_neighbours(&start).iter() {
-        if !Token::token_at(token_q, n) {
-            return Some(n.to_owned());
+        if !taken_coords.iter().any(|t| t == n) {
+            return Some(*n);
         }
     }
 
     for n in grid.get_neighbours(&start).iter() {
-        if let Some(n) = find_empty_cells(token_q, grid, n.to_owned()) {
+        if let Some(n) = find_empty_cells(taken_coords, grid, n.to_owned()) {
             return Some(n);
         }
     }
@@ -132,7 +127,9 @@ pub fn on_token_event(
                     y: t.translation.y,
                 };
 
-                let coords = find_empty_cells(&token_q, grid, grid.pos_to_hex_coord(&pos));
+                let taken_coords = token_q.iter().map(|t| t.coords).collect();
+
+                let coords = find_empty_cells(&taken_coords, grid, grid.pos_to_hex_coord(&pos));
 
                 match coords {
                     Some(coords) => {
@@ -140,6 +137,26 @@ pub fn on_token_event(
                         Token::create(&mut commands, &asset_server, token_type, pos, &coords);
                     }
                     None => log::error!("Token exists in that location"),
+                }
+            }
+            TokenEvent::BatchSpawn(toks) => {
+                let mut taken_coords = token_q.iter().map(|t| t.coords).collect();
+                for (token_type, t) in toks {
+                    let pos = Vec2 {
+                        x: t.translation.x,
+                        y: t.translation.y,
+                    };
+
+                    let coords = find_empty_cells(&taken_coords, grid, grid.pos_to_hex_coord(&pos));
+
+                    match coords {
+                        Some(coords) => {
+                            let pos = grid.hex_coord_to_pos(&coords);
+                            Token::create(&mut commands, &asset_server, token_type, pos, &coords);
+                            taken_coords.push(coords);
+                        }
+                        None => log::error!("Token exists in that location"),
+                    }
                 }
             }
         };
