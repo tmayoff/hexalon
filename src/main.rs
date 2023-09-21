@@ -18,7 +18,7 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 use draw::Draw;
 use grid::Grid;
 
-use crate::initiative_tracker::Data;
+use crate::initiative_tracker::{Data, Tracker};
 
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
@@ -57,7 +57,7 @@ fn main() {
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
         .insert_resource(ReqTimer(Timer::new(
-            std::time::Duration::from_secs(1),
+            std::time::Duration::from_millis(500),
             TimerMode::Repeating,
         )))
         .run();
@@ -76,6 +76,7 @@ fn setup(
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
 
     commands.spawn(Draw::default());
+    commands.spawn(Tracker { data: None });
 
     // Setup Camera
     commands.spawn((
@@ -99,11 +100,20 @@ fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTi
     }
 }
 
-fn handle_response(mut commands: Commands, results: Query<(Entity, &ReqwestBytesResult)>) {
+fn handle_response(
+    mut commands: Commands,
+    results: Query<(Entity, &ReqwestBytesResult)>,
+    mut tracker_q: Query<&mut Tracker>,
+) {
+    let mut tracker = tracker_q.single_mut();
+
     for (e, res) in results.iter() {
-        // let j = res.deserialize_json::<Data>().unwrap();
-        // TODO pass this data somewhere
-        // log::info!("{:?}", j.state);
-        // commands.entity(e).despawn_recursive();
+        match &res.0 {
+            Ok(_) => {
+                tracker.data = res.deserialize_json::<Data>();
+            }
+            Err(e) => log::error!("{:?}", e),
+        }
+        commands.entity(e).despawn_recursive();
     }
 }

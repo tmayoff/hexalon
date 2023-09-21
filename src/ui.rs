@@ -2,15 +2,20 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::draw::{Draw, DrawMode};
-use crate::token::{TokenEvent, TokenType};
+use crate::initiative_tracker::Tracker;
+use crate::token::{Token, TokenEvent, TokenType};
 
 pub fn gui(
+    mut commands: Commands,
     mut contexts: EguiContexts,
     mut draw_q: Query<&mut Draw>,
     mut token_event: EventWriter<TokenEvent>,
     cam_q: Query<&Transform, With<Camera2d>>,
+    token_q: Query<Entity, With<Token>>,
+    tracker_q: Query<&Tracker>,
 ) {
     let mut draw = draw_q.single_mut();
+    let tracker = tracker_q.single();
 
     let ctx = contexts.ctx_mut();
 
@@ -49,15 +54,27 @@ pub fn gui(
                 });
 
             ui.heading("Tokens");
-            if ui.button("Spawn Enemy").clicked() {
-                let cam = cam_q.single();
 
-                token_event.send(TokenEvent::Spawn((TokenType::Enemy, *cam)))
-            }
-
-            if ui.button("Spawn Party Member").clicked() {
-                let cam = cam_q.single();
-                token_event.send(TokenEvent::Spawn((TokenType::Party, *cam)))
+            if token_q.is_empty() {
+                if let Some(tracker_data) = &tracker.data {
+                    if ui.button("Load State").clicked() {
+                        let cam = cam_q.single();
+                        let batches = tracker_data
+                            .state
+                            .creatures
+                            .iter()
+                            .map(|c| match c.player {
+                                Some(_) => (TokenType::Party, *cam),
+                                None => (TokenType::Enemy, *cam),
+                            })
+                            .collect();
+                        token_event.send(TokenEvent::BatchSpawn(batches))
+                    }
+                }
+            } else if ui.button("Clear state").clicked() {
+                token_q
+                    .iter()
+                    .for_each(|e| commands.entity(e).despawn_recursive())
             }
         });
     });
