@@ -23,6 +23,9 @@ jobs:
 
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
+
+    - name: rust-clippy-check
+      uses: actions-rs/clippy-check@v1.0.7
       
     - name: Build
       run: cargo build --verbose
