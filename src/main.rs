@@ -9,7 +9,11 @@ mod initiative_tracker;
 mod token;
 mod ui;
 
-use bevy::{audio::AudioPlugin, prelude::*};
+use bevy::{
+    audio::AudioPlugin,
+    core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
+    prelude::*,
+};
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_mod_reqwest::{reqwest, ReqwestBytesResult, ReqwestPlugin, ReqwestRequest};
@@ -80,7 +84,15 @@ fn setup(
 
     // Setup Camera
     commands.spawn((
-        Camera2dBundle::default(),
+        Camera2dBundle {
+            camera: Camera {
+                hdr: true,
+                ..default()
+            },
+            tonemapping: Tonemapping::TonyMcMapface,
+            ..default()
+        },
+        BloomSettings::default(),
         PanCam {
             grab_buttons: vec![MouseButton::Middle],
             ..Default::default()
@@ -110,7 +122,8 @@ fn handle_response(
     for (e, res) in results.iter() {
         match &res.0 {
             Ok(_) => {
-                tracker.data = res.deserialize_json::<Data>();
+                let new_data = res.deserialize_json::<Data>();
+                tracker.data = new_data;
             }
             Err(e) => log::error!("{:?}", e),
         }
