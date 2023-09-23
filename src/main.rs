@@ -82,7 +82,7 @@ fn setup(
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
 
     commands.spawn(Draw::default());
-    commands.spawn(Tracker { data: None });
+    commands.spawn(Tracker::default());
 
     // Setup Camera
     commands.spawn((

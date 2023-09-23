@@ -59,24 +59,28 @@ pub fn gui(
             ui.heading("Tokens");
 
             if token_q.is_empty() {
-                if let Some(tracker_data) = &tracker.data {
-                    if ui.button("Load State").clicked() {
-                        let cam = cam_q.single();
-                        let pos = Vec2 {
-                            x: cam.translation.x,
-                            y: cam.translation.z,
-                        };
-                        let coords = grid.pos_to_hex_coord(&pos);
+                if !tracker.ordered.is_empty() && ui.button("Load State").clicked() {
+                    let cam = cam_q.single();
+                    let pos = Vec2 {
+                        x: cam.translation.x,
+                        y: cam.translation.z,
+                    };
+                    let coords = grid.pos_to_hex_coord(&pos);
 
-                        let batches = tracker_data
-                            .state
-                            .creatures
-                            .iter()
-                            .map(|c| match c.player {
+                    let batches = tracker
+                        .ordered
+                        .iter()
+                        .map(|c| {
+                            let mut name = c.name.split(' ').next().unwrap().to_string();
+                            if c.number > 0 {
+                                name += &format!(" {}", c.number);
+                            }
+
+                            match c.player {
                                 Some(_) => (
                                     Token::new(
                                         &c.id,
-                                        c.name.split(' ').next().unwrap(),
+                                        &name,
                                         TokenType::Party,
                                         &coords,
                                         &Color::BLUE,
@@ -86,17 +90,17 @@ pub fn gui(
                                 None => (
                                     Token::new(
                                         &c.id,
-                                        c.name.split(' ').next().unwrap(),
+                                        &name,
                                         TokenType::Enemy,
                                         &coords,
                                         &Color::rgb(0.93, 0.13, 0.25),
                                     ),
                                     pos,
                                 ),
-                            })
-                            .collect();
-                        token_event.send(TokenEvent::BatchSpawn(batches))
-                    }
+                            }
+                        })
+                        .collect();
+                    token_event.send(TokenEvent::BatchSpawn(batches))
                 }
             } else if ui.button("Clear state").clicked() {
                 token_q
