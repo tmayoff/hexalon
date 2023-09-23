@@ -76,7 +76,7 @@ pub fn gui(
                                 Some(_) => (
                                     Token::new(
                                         &c.id,
-                                        &c.name,
+                                        c.name.split(' ').next().unwrap(),
                                         TokenType::Party,
                                         &coords,
                                         &Color::BLUE,
@@ -86,7 +86,7 @@ pub fn gui(
                                 None => (
                                     Token::new(
                                         &c.id,
-                                        &c.name,
+                                        c.name.split(' ').next().unwrap(),
                                         TokenType::Enemy,
                                         &coords,
                                         &Color::rgb(0.93, 0.13, 0.25),
