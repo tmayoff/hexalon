@@ -16,14 +16,13 @@ use bevy::{
 };
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
-use bevy_mod_reqwest::{reqwest, ReqwestBytesResult, ReqwestPlugin, ReqwestRequest};
+use bevy_mod_reqwest::ReqwestPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
 
 use draw::Draw;
 use grid::Grid;
-use token::TurnEvent;
 
-use crate::initiative_tracker::{Data, Tracker};
+use crate::initiative_tracker::Tracker;
 
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
@@ -52,12 +51,11 @@ fn main() {
         .add_systems(
             Update,
             (
-                send_request,
-                handle_response,
+                initiative_tracker::send_request,
+                initiative_tracker::handle_response,
                 ui::gui,
                 draw::on_draw,
                 token::on_token_event,
-                token::on_turn_update,
             ),
         )
         .add_event::<cell::CellEvent>()
@@ -102,50 +100,4 @@ fn setup(
         },
         RaycastPickCamera::default(),
     ));
-}
-
-fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        let req = reqwest::Request::new(
-            reqwest::Method::GET,
-            "http://127.0.0.1:8080/ttrpg_data".try_into().unwrap(),
-        );
-
-        commands.spawn(ReqwestRequest::new(req));
-    }
-}
-
-fn handle_response(
-    mut commands: Commands,
-    mut event_writer: EventWriter<TurnEvent>,
-    results: Query<(Entity, &ReqwestBytesResult)>,
-    mut tracker_q: Query<&mut Tracker>,
-) {
-    let mut tracker = tracker_q.single_mut();
-
-    for (e, res) in results.iter() {
-        match &res.0 {
-            Ok(_) => {
-                let old_data = &tracker.data;
-                let new_data = res
-                    .deserialize_json::<Data>()
-                    .expect("Failed to deserialize data");
-
-                match old_data {
-                    Some(old_data) => {
-                        if old_data.state != new_data.state {
-                            event_writer.send(TurnEvent);
-                        }
-
-                        tracker.data = Some(new_data);
-                    }
-                    None => {
-                        tracker.data = Some(new_data);
-                    }
-                }
-            }
-            Err(e) => log::error!("{:?}", e),
-        }
-        commands.entity(e).despawn_recursive();
-    }
 }

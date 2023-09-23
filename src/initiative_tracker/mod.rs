@@ -1,5 +1,8 @@
-use bevy::prelude::Component;
+use bevy::prelude::*;
+use bevy_mod_reqwest::{reqwest, ReqwestBytesResult, ReqwestRequest};
 use serde::Deserialize;
+
+use crate::{token::TurnEvent, ReqTimer};
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Player {
@@ -60,4 +63,35 @@ pub struct Data {
 #[derive(Component)]
 pub struct Tracker {
     pub data: Option<Data>,
+}
+
+pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
+    if timer.0.tick(time.delta()).just_finished() {
+        let req = reqwest::Request::new(
+            reqwest::Method::GET,
+            "http://127.0.0.1:8080/ttrpg_data".try_into().unwrap(),
+        );
+
+        commands.spawn(ReqwestRequest::new(req));
+    }
+}
+
+pub fn handle_response(
+    mut commands: Commands,
+    mut event_writer: EventWriter<TurnEvent>,
+    results: Query<(Entity, &ReqwestBytesResult)>,
+    mut tracker_q: Query<&mut Tracker>,
+) {
+    let mut tracker = tracker_q.single_mut();
+    for (e, res) in results.iter() {
+        match &res.0 {
+            Ok(_) => {
+                let data = res
+                    .deserialize_json::<Data>()
+                    .expect("Failed to deserialize data");
+            }
+            Err(e) => log::error!("{:?}", e),
+        }
+        commands.entity(e).despawn_recursive();
+    }
 }
