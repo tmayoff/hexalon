@@ -144,10 +144,6 @@ fn find_empty_cells(
     None
 }
 
-pub fn on_turn_update(mut event_reader: EventReader<TurnEvent>) {
-    log::info!("New turn information");
-}
-
 pub fn on_token_event(
     mut event_reader: EventReader<TokenEvent>,
     mut commands: Commands,
