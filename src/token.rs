@@ -1,8 +1,9 @@
-use bevy::prelude::*;
+use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
 
-use crate::{grid::Grid, hex::HexCoord};
+use crate::{grid::Grid, hex::HexCoord, initiative_tracker::TrackerEvent};
 
+#[derive(Debug, Clone)]
 pub enum TokenType {
     Party,
     Enemy,
@@ -16,7 +17,7 @@ pub enum TokenEvent {
     BatchSpawn(Vec<(Token, Vec2)>),
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Debug)]
 pub struct Token {
     name: String,
     creature_id: String,
@@ -45,7 +46,7 @@ impl Token {
     fn create(
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
-        token: &Token,
+        token: Token,
         pos: &Vec2,
     ) -> Entity {
         let texture = match token.token_type {
@@ -55,6 +56,7 @@ impl Token {
 
         let entity = commands
             .spawn((
+                token.clone(),
                 SpriteBundle {
                     texture,
                     transform: Transform::from_translation(pos.extend(0.1)),
@@ -144,6 +146,23 @@ fn find_empty_cells(
     None
 }
 
+pub fn on_tracker_event(
+    mut event_reader: EventReader<TrackerEvent>,
+    mut tokens_q: Query<(&Token, &mut Sprite)>,
+) {
+    for e in event_reader.iter() {
+        if let TrackerEvent::TurnUpdate(c) = e {
+            for (tok, mut sprite) in &mut tokens_q {
+                if c.id == tok.creature_id {
+                    sprite.color = tok.color + vec4(1.0, 1.0, 1.0, 0.0);
+                } else {
+                    sprite.color = tok.color;
+                }
+            }
+        }
+    }
+}
+
 pub fn on_token_event(
     mut event_reader: EventReader<TokenEvent>,
     mut commands: Commands,
@@ -163,7 +182,7 @@ pub fn on_token_event(
                     match coords {
                         Some(coords) => {
                             let pos = grid.hex_coord_to_pos(&coords);
-                            Token::create(&mut commands, &asset_server, tok, &pos);
+                            Token::create(&mut commands, &asset_server, tok.clone(), &pos);
                             taken_coords.push(coords);
                         }
                         None => log::error!("Token exists in that location"),

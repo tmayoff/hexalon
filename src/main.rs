@@ -56,11 +56,12 @@ fn main() {
                 ui::gui,
                 draw::on_draw,
                 token::on_token_event,
+                token::on_tracker_event,
             ),
         )
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
-        .add_event::<token::TurnEvent>()
+        .add_event::<initiative_tracker::TrackerEvent>()
         .insert_resource(ReqTimer(Timer::new(
             std::time::Duration::from_millis(500),
             TimerMode::Repeating,

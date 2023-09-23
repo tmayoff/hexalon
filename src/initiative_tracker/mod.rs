@@ -1,8 +1,11 @@
+mod state;
+
 use bevy::prelude::*;
 use bevy_mod_reqwest::{reqwest, ReqwestBytesResult, ReqwestRequest};
 use serde::Deserialize;
 
-use crate::{token::TurnEvent, ReqTimer};
+use crate::ReqTimer;
+use state::State;
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Player {
@@ -18,8 +21,8 @@ pub struct Monster {
     ac: i32,
     hp: i32,
     cr: String,
-    currentAC: i32,
-    currentHP: i32,
+    // currentAC: i32,
+    // currentHP: i32,
     enabled: bool,
 }
 
@@ -49,20 +52,49 @@ pub struct Creature {
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
-pub struct State {
-    pub creatures: Vec<Creature>,
-}
-
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Data {
     pub players: Vec<Player>,
     pub parties: Vec<Party>,
     pub state: State,
 }
 
+#[derive(Event)]
+pub enum TrackerEvent {
+    TurnUpdate(Creature),
+}
+
 #[derive(Component)]
 pub struct Tracker {
     pub data: Option<Data>,
+}
+
+impl Tracker {
+    fn get_turn_event(&self, new_state: &State) -> Option<TrackerEvent> {
+        if let Some(data) = &self.data {
+            let current_turn = data.state.current_creatures_turn();
+            let new_turn = new_state.current_creatures_turn();
+
+            if current_turn != new_turn {
+                if let Some(c) = new_turn {
+                    return Some(TrackerEvent::TurnUpdate(c));
+                }
+            }
+        }
+
+        None
+    }
+
+    fn update_data(&mut self, new_data: Data) -> Vec<TrackerEvent> {
+        let mut events = Vec::new();
+
+        if let Some(e) = self.get_turn_event(&new_data.state) {
+            events.push(e);
+        }
+
+        self.data = Some(new_data);
+
+        events
+    }
 }
 
 pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
@@ -78,17 +110,22 @@ pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<R
 
 pub fn handle_response(
     mut commands: Commands,
-    mut event_writer: EventWriter<TurnEvent>,
-    results: Query<(Entity, &ReqwestBytesResult)>,
+    mut event_writer: EventWriter<TrackerEvent>,
     mut tracker_q: Query<&mut Tracker>,
+    results: Query<(Entity, &ReqwestBytesResult)>,
 ) {
     let mut tracker = tracker_q.single_mut();
     for (e, res) in results.iter() {
         match &res.0 {
             Ok(_) => {
-                let data = res
-                    .deserialize_json::<Data>()
-                    .expect("Failed to deserialize data");
+                let events = tracker.update_data(
+                    res.deserialize_json::<Data>()
+                        .expect("Failed to deserialize data"),
+                );
+
+                for e in events {
+                    event_writer.send(e);
+                }
             }
             Err(e) => log::error!("{:?}", e),
         }
