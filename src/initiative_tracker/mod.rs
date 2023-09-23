@@ -46,9 +46,11 @@ pub struct Creature {
     pub initiative: i32,
     pub player: Option<bool>,
     pub active: bool,
-
-    #[serde(flatten)]
-    pub creature: CreatureType,
+    pub number: i32,
+    pub cr: Option<String>,
+    pub current_ac: i32,
+    // #[serde(flatten)]
+    // pub creature: CreatureType,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
@@ -63,48 +65,37 @@ pub enum TrackerEvent {
     TurnUpdate(Creature),
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Tracker {
-    pub data: Option<Data>,
+    pub ordered: Vec<Creature>,
 }
 
 impl Tracker {
-    fn get_turn_event(&self, new_state: &State) -> Option<TrackerEvent> {
-        if let Some(data) = &self.data {
-            let current_turn = data.state.current_creatures_turn();
-            let new_turn = new_state.current_creatures_turn();
+    fn get_turn_event(&self, new_state: &[Creature]) -> Option<TrackerEvent> {
+        let current_turn = self.ordered.iter().find(|c| c.active);
+        let new_turn = new_state.iter().find(|c| c.active);
 
-            if current_turn != new_turn {
-                if let Some(c) = new_turn {
-                    return Some(TrackerEvent::TurnUpdate(c));
-                }
+        if current_turn != new_turn {
+            if let Some(c) = new_turn {
+                return Some(TrackerEvent::TurnUpdate(c.clone()));
             }
         }
 
         None
     }
-
-    fn update_data(&mut self, new_data: Data) -> Vec<TrackerEvent> {
-        let mut events = Vec::new();
-
-        if let Some(e) = self.get_turn_event(&new_data.state) {
-            events.push(e);
-        }
-
-        self.data = Some(new_data);
-
-        events
-    }
 }
+
+#[derive(Component)]
+pub struct TrackerOrdered;
 
 pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
     if timer.0.tick(time.delta()).just_finished() {
         let req = reqwest::Request::new(
             reqwest::Method::GET,
-            "http://127.0.0.1:8080/ttrpg_data".try_into().unwrap(),
+            "http://127.0.0.1:8080/tracker/ordered".try_into().unwrap(),
         );
 
-        commands.spawn(ReqwestRequest::new(req));
+        commands.spawn((ReqwestRequest::new(req), TrackerOrdered));
     }
 }
 
@@ -112,23 +103,27 @@ pub fn handle_response(
     mut commands: Commands,
     mut event_writer: EventWriter<TrackerEvent>,
     mut tracker_q: Query<&mut Tracker>,
-    results: Query<(Entity, &ReqwestBytesResult)>,
+    mut results: Query<(Entity, &ReqwestBytesResult), With<TrackerOrdered>>,
 ) {
     let mut tracker = tracker_q.single_mut();
-    for (e, res) in results.iter() {
+    for (e, res) in results.iter_mut() {
         match &res.0 {
             Ok(_) => {
-                let events = tracker.update_data(
-                    res.deserialize_json::<Data>()
-                        .expect("Failed to deserialize data"),
-                );
-
-                for e in events {
-                    event_writer.send(e);
+                let ordered_data = res
+                    .deserialize_json::<Vec<Creature>>()
+                    .expect("Failed to get new tracker order");
+                if tracker.ordered != ordered_data {
+                    let e = tracker.get_turn_event(&ordered_data);
+                    if let Some(e) = e {
+                        event_writer.send(e);
+                    }
+                    tracker.ordered = ordered_data;
                 }
             }
             Err(e) => log::error!("{:?}", e),
         }
+
+        // Remove the old request
         commands.entity(e).despawn_recursive();
     }
 }
