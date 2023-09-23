@@ -72,11 +72,9 @@ pub fn gui(
                         .iter()
                         .map(|c| {
                             let mut name = c.name.split(' ').next().unwrap().to_string();
-                            // if let Some(n) = c.number {
                             if c.number > 0 {
                                 name += &format!(" {}", c.number);
                             }
-                            // }
 
                             match c.player {
                                 Some(_) => (

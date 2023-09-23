@@ -107,8 +107,6 @@ pub fn handle_response(
 ) {
     let mut tracker = tracker_q.single_mut();
     for (e, res) in results.iter_mut() {
-        let string = res.as_str().unwrap();
-        bevy::log::info!("{string}");
         match &res.0 {
             Ok(_) => {
                 let ordered_data = res
