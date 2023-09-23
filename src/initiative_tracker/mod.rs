@@ -112,7 +112,6 @@ pub fn handle_response(
                 let ordered_data = res
                     .deserialize_json::<Vec<Creature>>()
                     .expect("Failed to get new tracker order");
-                log::debug!("{:?}", ordered_data);
                 if tracker.ordered != ordered_data {
                     let e = tracker.get_turn_event(&ordered_data);
                     if let Some(e) = e {
