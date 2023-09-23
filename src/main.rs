@@ -39,6 +39,7 @@ lazy_static! {
 fn main() {
     App::new()
         .insert_resource(ClearColor(*CLEAR_COLOR))
+        .insert_resource(Msaa::Sample4)
         .add_plugins((
             DefaultPlugins.build().disable::<AudioPlugin>(),
             DefaultPickingPlugins
@@ -104,13 +105,4 @@ fn setup(
         },
         RaycastPickCamera::default(),
     ));
-
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
-            ..default()
-        },
-        transform: Transform::from_xyz(0.0, 0.0, 3.0),
-        ..default()
-    });
 }
