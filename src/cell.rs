@@ -1,4 +1,5 @@
 use bevy::{math::vec4, prelude::*, sprite::MaterialMesh2dBundle};
+use bevy_mod_outline::{OutlineBundle, OutlineMeshExt, OutlineVolume};
 use bevy_mod_picking::{prelude::*, PickableBundle};
 
 use crate::hex::HexCoord;
@@ -41,27 +42,38 @@ impl Cell {
             color: *HEX_COLOR,
         };
 
-        let mesh = MaterialMesh2dBundle {
-            mesh: meshes
-                .add(Mesh::from(shape::RegularPolygon::new(size, 6)))
-                .into(),
+        let mut mesh = Mesh::from(shape::RegularPolygon::new(size, 6));
+        mesh.generate_outline_normals().unwrap();
+
+        let mesh_bundle = MaterialMesh2dBundle {
+            mesh: meshes.add(mesh).into(),
             material: materials.add((*HEX_COLOR).into()),
             transform: Transform::default().with_translation(world_pos.extend(0.1)),
             ..Default::default()
         };
 
-        commands
-            .spawn((
-                mesh,
-                c,
-                RaycastPickTarget::default(),
-                PickableBundle::default(),
-                On::<Pointer<Over>>::run(on_hover_enter),
-                On::<Pointer<Out>>::run(on_hover_out),
-                On::<Pointer<Down>>::run(on_pressed),
-                On::<Pointer<Up>>::run(on_released),
-            ))
-            .id()
+        let mut entity = commands.spawn((
+            mesh_bundle,
+            c,
+            RaycastPickTarget::default(),
+            PickableBundle::default(),
+            On::<Pointer<Over>>::run(on_hover_enter),
+            On::<Pointer<Out>>::run(on_hover_out),
+            On::<Pointer<Down>>::run(on_pressed),
+            On::<Pointer<Up>>::run(on_released),
+        ));
+
+        entity.insert(OutlineBundle {
+            outline: OutlineVolume {
+                visible: true,
+                colour: Color::rgba(0.0, 1.0, 0.0, 1.0),
+                width: 25.0,
+            },
+
+            ..Default::default()
+        });
+
+        entity.id()
     }
 }
 

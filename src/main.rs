@@ -15,6 +15,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_egui::EguiPlugin;
+use bevy_mod_outline::OutlinePlugin;
 use bevy_mod_picking::prelude::*;
 use bevy_mod_reqwest::ReqwestPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
@@ -34,6 +35,7 @@ lazy_static! {
     static ref CLEAR_COLOR: Color = *HEX_OUTLINE_COLOR;
 }
 
+#[bevy_main]
 fn main() {
     App::new()
         .insert_resource(ClearColor(*CLEAR_COLOR))
@@ -46,6 +48,7 @@ fn main() {
             PanCamPlugin,
             EguiPlugin,
             ReqwestPlugin,
+            OutlinePlugin,
         ))
         .add_systems(Startup, setup)
         .add_systems(
@@ -88,17 +91,26 @@ fn setup(
     commands.spawn((
         Camera2dBundle {
             camera: Camera {
-                hdr: true,
+                // hdr: true,
                 ..default()
             },
-            tonemapping: Tonemapping::TonyMcMapface,
+            // tonemapping: Tonemapping::TonyMcMapface,
             ..default()
         },
-        BloomSettings::default(),
+        // BloomSettings::default(),
         PanCam {
             grab_buttons: vec![MouseButton::Middle],
             ..Default::default()
         },
         RaycastPickCamera::default(),
     ));
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            ..default()
+        },
+        transform: Transform::from_xyz(0.0, 0.0, 3.0),
+        ..default()
+    });
 }
