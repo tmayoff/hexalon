@@ -67,13 +67,7 @@ impl Token {
                     },
                     ..Default::default()
                 },
-                On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
-                    transform.translation += Vec2 {
-                        x: drag.delta.x,
-                        y: -drag.delta.y,
-                    }
-                    .extend(0.0);
-                }),
+                On::<Pointer<Drag>>::run(on_token_drag),
                 On::<Pointer<DragEnd>>::run(on_token_dropped),
             ))
             .id();
@@ -100,6 +94,20 @@ impl Token {
         commands.entity(entity).add_child(text);
 
         entity
+    }
+}
+
+fn on_token_drag(
+    event: Listener<Pointer<Drag>>,
+    cam_q: Query<&OrthographicProjection, With<Camera>>,
+    mut token_q: Query<&mut Transform, With<Token>>,
+) {
+    let cam_proj = cam_q.single();
+    let mut t = token_q.get_mut(event.target).unwrap();
+    t.translation += Vec3 {
+        x: event.delta.x * cam_proj.scale,
+        y: -event.delta.y * cam_proj.scale,
+        z: 0.0,
     }
 }
 

@@ -16,7 +16,7 @@ lazy_static! {
 #[derive(Event)]
 pub enum CellEvent {
     Pressed(Entity),
-    Released(Entity),
+    Released(Option<Entity>),
     Over(Entity),
 }
 
@@ -60,6 +60,7 @@ impl Cell {
             On::<Pointer<Over>>::run(on_hover_enter),
             On::<Pointer<Out>>::run(on_hover_out),
             On::<Pointer<Down>>::run(on_pressed),
+            On::<Pointer<DragEnd>>::run(on_drag_end),
             On::<Pointer<Up>>::run(on_released),
         ));
 
@@ -117,5 +118,9 @@ fn on_released(event: Listener<Pointer<Up>>, mut cell_event: EventWriter<CellEve
         return;
     }
 
-    cell_event.send(CellEvent::Released(event.target));
+    cell_event.send(CellEvent::Released(Some(event.target)));
+}
+
+fn on_drag_end(event: Listener<Pointer<DragEnd>>, mut cell_event: EventWriter<CellEvent>) {
+    cell_event.send(CellEvent::Released(None));
 }

@@ -147,12 +147,26 @@ pub fn on_draw(
             CellEvent::Released(cell) => {
                 if draw.draw_mode == DrawMode::Line {
                     if let Some(start_cell) = draw.start_cell {
-                        draw.draw_line(&start_cell, cell, &mut cell_q, &mut materials, grid, false);
+                        draw.draw_line(
+                            &start_cell,
+                            &cell.unwrap(),
+                            &mut cell_q,
+                            &mut materials,
+                            grid,
+                            false,
+                        );
                     }
                     draw.last_hint = Vec::new();
                 } else if draw.draw_mode == DrawMode::Box {
                     if let Some(start_cell) = draw.start_cell {
-                        draw.draw_box(&start_cell, cell, &mut cell_q, &mut materials, grid, false);
+                        draw.draw_box(
+                            &start_cell,
+                            &cell.unwrap(),
+                            &mut cell_q,
+                            &mut materials,
+                            grid,
+                            false,
+                        );
                     }
                 }
 
