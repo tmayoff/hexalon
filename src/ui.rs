@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::draw::{Draw, DrawMode};
+use crate::grid::Grid;
 use crate::initiative_tracker::Tracker;
 use crate::token::{Token, TokenEvent, TokenType};
 
@@ -10,12 +11,14 @@ pub fn gui(
     mut contexts: EguiContexts,
     mut draw_q: Query<&mut Draw>,
     mut token_event: EventWriter<TokenEvent>,
+    grid_q: Query<&Grid>,
     cam_q: Query<&Transform, With<Camera2d>>,
     token_q: Query<Entity, With<Token>>,
     tracker_q: Query<&Tracker>,
 ) {
     let mut draw = draw_q.single_mut();
     let tracker = tracker_q.single();
+    let grid = grid_q.single();
 
     let ctx = contexts.ctx_mut();
 
@@ -59,20 +62,36 @@ pub fn gui(
                 if let Some(tracker_data) = &tracker.data {
                     if ui.button("Load State").clicked() {
                         let cam = cam_q.single();
+                        let pos = Vec2 {
+                            x: cam.translation.x,
+                            y: cam.translation.z,
+                        };
+                        let coords = grid.pos_to_hex_coord(&pos);
+
                         let batches = tracker_data
                             .state
                             .creatures
                             .iter()
                             .map(|c| match c.player {
                                 Some(_) => (
-                                    c.name.split(' ').next().unwrap().to_owned(),
-                                    TokenType::Party,
-                                    *cam,
+                                    Token::new(
+                                        &c.id,
+                                        &c.name,
+                                        TokenType::Party,
+                                        &coords,
+                                        &Color::BLUE,
+                                    ),
+                                    pos,
                                 ),
                                 None => (
-                                    c.name.split(' ').next().unwrap().to_owned(),
-                                    TokenType::Enemy,
-                                    *cam,
+                                    Token::new(
+                                        &c.id,
+                                        &c.name,
+                                        TokenType::Enemy,
+                                        &coords,
+                                        &Color::rgb(0.93, 0.13, 0.25),
+                                    ),
+                                    pos,
                                 ),
                             })
                             .collect();

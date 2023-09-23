@@ -1,9 +1,7 @@
 use bevy::prelude::Component;
 use serde::Deserialize;
 
-// TODO consider cleaning these structs up. Especially when it comes to the initiative vs non initiative characters
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Player {
     ac: i32,
     hp: i32,
@@ -11,7 +9,7 @@ pub struct Player {
     modifier: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Monster {
     display: Option<String>,
     ac: i32,
@@ -22,36 +20,37 @@ pub struct Monster {
     enabled: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Party {
     pub name: String,
     pub players: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum CreatureType {
     Player(Player),
     Monster(Monster),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Creature {
     pub id: String,
     pub name: String,
     pub initiative: i32,
     pub player: Option<bool>,
+    pub active: bool,
 
     #[serde(flatten)]
     pub creature: CreatureType,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct State {
     pub creatures: Vec<Creature>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Data {
     pub players: Vec<Player>,
     pub parties: Vec<Party>,

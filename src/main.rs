@@ -21,6 +21,7 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 
 use draw::Draw;
 use grid::Grid;
+use token::TurnEvent;
 
 use crate::initiative_tracker::{Data, Tracker};
 
@@ -56,10 +57,12 @@ fn main() {
                 ui::gui,
                 draw::on_draw,
                 token::on_token_event,
+                token::on_turn_update,
             ),
         )
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
+        .add_event::<token::TurnEvent>()
         .insert_resource(ReqTimer(Timer::new(
             std::time::Duration::from_millis(500),
             TimerMode::Repeating,
@@ -114,6 +117,7 @@ fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTi
 
 fn handle_response(
     mut commands: Commands,
+    mut event_writer: EventWriter<TurnEvent>,
     results: Query<(Entity, &ReqwestBytesResult)>,
     mut tracker_q: Query<&mut Tracker>,
 ) {
@@ -122,8 +126,23 @@ fn handle_response(
     for (e, res) in results.iter() {
         match &res.0 {
             Ok(_) => {
-                let new_data = res.deserialize_json::<Data>();
-                tracker.data = new_data;
+                let old_data = &tracker.data;
+                let new_data = res
+                    .deserialize_json::<Data>()
+                    .expect("Failed to deserialize data");
+
+                match old_data {
+                    Some(old_data) => {
+                        if old_data.state != new_data.state {
+                            event_writer.send(TurnEvent);
+                        }
+
+                        tracker.data = Some(new_data);
+                    }
+                    None => {
+                        tracker.data = Some(new_data);
+                    }
+                }
             }
             Err(e) => log::error!("{:?}", e),
         }
