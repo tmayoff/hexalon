@@ -1,60 +1,68 @@
-use bevy::prelude::*;
+use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
 
-use crate::{grid::Grid, hex::HexCoord};
+use crate::{grid::Grid, hex::HexCoord, initiative_tracker::TrackerEvent};
 
+#[derive(Debug, Clone)]
 pub enum TokenType {
     Party,
     Enemy,
 }
 
 #[derive(Event)]
+pub struct TurnEvent;
+
+#[derive(Event)]
 pub enum TokenEvent {
-    Spawn((String, TokenType, Transform)),
-    BatchSpawn(Vec<(String, TokenType, Transform)>),
+    BatchSpawn(Vec<(Token, Vec2)>),
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Debug)]
 pub struct Token {
     name: String,
+    creature_id: String,
+    token_type: TokenType,
     coords: HexCoord,
+    color: Color,
 }
 
 impl Token {
+    pub fn new(
+        creature_id: &str,
+        name: &str,
+        token_type: TokenType,
+        coords: &HexCoord,
+        color: &Color,
+    ) -> Self {
+        Self {
+            name: name.to_string(),
+            creature_id: creature_id.to_string(),
+            token_type,
+            coords: *coords,
+            color: *color,
+        }
+    }
+
     fn create(
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
-        token_type: &TokenType,
-        name: String,
-        pos: Vec2,
-        coords: &HexCoord,
+        token: Token,
+        pos: &Vec2,
     ) -> Entity {
-        let texture;
-        let color;
-
-        match token_type {
-            TokenType::Party => {
-                texture = asset_server.load("sprites/shield-sword.png");
-                color = Color::BLUE;
-            }
-            TokenType::Enemy => {
-                texture = asset_server.load("sprites/skull.png");
-                color = Color::rgb(0.93, 0.13, 0.25);
-            }
-        }
+        let texture = match token.token_type {
+            TokenType::Party => asset_server.load("sprites/shield-sword.png"),
+            TokenType::Enemy => asset_server.load("sprites/skull.png"),
+        };
 
         let entity = commands
             .spawn((
-                Token {
-                    coords: *coords,
-                    name: name.clone(),
-                },
+                token.clone(),
                 SpriteBundle {
                     texture,
                     transform: Transform::from_translation(pos.extend(0.1)),
                     sprite: Sprite {
                         custom_size: Some(Vec2 { x: 55.0, y: 55.0 }),
-                        color,
+                        color: token.color,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -73,7 +81,7 @@ impl Token {
         let text = commands
             .spawn(Text2dBundle {
                 text: Text::from_section(
-                    name,
+                    token.name.clone(),
                     TextStyle {
                         font: asset_server.load("fonts/Roboto-Regular.ttf"),
                         font_size: 30.0,
@@ -138,6 +146,23 @@ fn find_empty_cells(
     None
 }
 
+pub fn on_tracker_event(
+    mut event_reader: EventReader<TrackerEvent>,
+    mut tokens_q: Query<(&Token, &mut Sprite)>,
+) {
+    for e in event_reader.iter() {
+        if let TrackerEvent::TurnUpdate(c) = e {
+            for (tok, mut sprite) in &mut tokens_q {
+                if c.id == tok.creature_id {
+                    sprite.color = tok.color + vec4(1.0, 1.0, 1.0, 0.0);
+                } else {
+                    sprite.color = tok.color;
+                }
+            }
+        }
+    }
+}
+
 pub fn on_token_event(
     mut event_reader: EventReader<TokenEvent>,
     mut commands: Commands,
@@ -149,52 +174,15 @@ pub fn on_token_event(
 
     for e in event_reader.iter() {
         match e {
-            TokenEvent::Spawn((name, token_type, t)) => {
-                let pos = Vec2 {
-                    x: t.translation.x,
-                    y: t.translation.y,
-                };
-
-                let taken_coords = token_q.iter().map(|t| t.coords).collect();
-
-                let coords = find_empty_cells(&taken_coords, grid, grid.pos_to_hex_coord(&pos));
-
-                match coords {
-                    Some(coords) => {
-                        let pos = grid.hex_coord_to_pos(&coords);
-                        Token::create(
-                            &mut commands,
-                            &asset_server,
-                            token_type,
-                            name.to_owned(),
-                            pos,
-                            &coords,
-                        );
-                    }
-                    None => log::error!("Token exists in that location"),
-                }
-            }
             TokenEvent::BatchSpawn(toks) => {
                 let mut taken_coords = token_q.iter().map(|t| t.coords).collect();
-                for (name, token_type, t) in toks {
-                    let pos = Vec2 {
-                        x: t.translation.x,
-                        y: t.translation.y,
-                    };
-
-                    let coords = find_empty_cells(&taken_coords, grid, grid.pos_to_hex_coord(&pos));
+                for (tok, pos) in toks {
+                    let coords = find_empty_cells(&taken_coords, grid, grid.pos_to_hex_coord(pos));
 
                     match coords {
                         Some(coords) => {
                             let pos = grid.hex_coord_to_pos(&coords);
-                            Token::create(
-                                &mut commands,
-                                &asset_server,
-                                token_type,
-                                name.to_owned(),
-                                pos,
-                                &coords,
-                            );
+                            Token::create(&mut commands, &asset_server, tok.clone(), &pos);
                             taken_coords.push(coords);
                         }
                         None => log::error!("Token exists in that location"),
