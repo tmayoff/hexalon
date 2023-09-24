@@ -1,8 +1,11 @@
+use std::cmp;
+
 use bevy::prelude::*;
 
 use crate::{
     cell::{Cell, CellEvent},
     grid::{Grid, HEX_HOVER_COLOR},
+    hex::HexCoord,
 };
 
 #[derive(PartialEq, Eq)]
@@ -21,6 +24,7 @@ pub struct Selection {
 #[derive(Component)]
 pub struct Draw {
     pub draw_mode: DrawMode,
+    pub fill: bool,
     pub color: Color,
 
     start_cell: Option<Entity>,
@@ -32,6 +36,7 @@ impl Default for Draw {
     fn default() -> Self {
         Self {
             draw_mode: DrawMode::Cell,
+            fill: false,
             color: Color::BLUE,
             start_cell: None,
             last_hint: Vec::new(),
@@ -62,13 +67,32 @@ impl Draw {
         grid: &Grid,
         hint: bool,
     ) {
-        let start = cell_q.get(*start).unwrap();
-        let end = cell_q.get(*end).unwrap();
+        let (start_cell, _) = cell_q.get(*start).unwrap();
+        let (end_cell, _) = cell_q.get(*end).unwrap();
+        let start_pos = start_cell.pos;
+        let end_pos = end_cell.pos;
 
-        let cells = grid.get_cells_in_box(&start.0.pos, &end.0.pos);
+        let cells = grid.get_cells_in_box(&start_pos, &end_pos);
 
         for cell in &cells {
             self.draw_cell(cell, cell_q, materials, hint);
+        }
+
+        if self.fill {
+            let start_q = cmp::min(start_pos.q, end_pos.q);
+            let end_q = cmp::max(start_pos.q, end_pos.q);
+            let start_r = cmp::min(start_pos.r, end_pos.r);
+            let end_r = cmp::max(start_pos.r, end_pos.r);
+
+            for q in start_q..end_q {
+                for r in start_r..end_r {
+                    let pos = HexCoord { q, r };
+                    let c = grid.get_cell(&pos);
+                    if let Some(cell) = c {
+                        self.draw_cell(cell, cell_q, materials, hint);
+                    }
+                }
+            }
         }
 
         self.last_hint = cells;
