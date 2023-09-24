@@ -97,6 +97,10 @@ impl Grid {
         commands.spawn(grid);
     }
 
+    pub fn get_cell(&self, pos: &HexCoord) -> Option<&Entity> {
+        self.cells.get(pos)
+    }
+
     pub fn get_neighbours(&self, pos: &HexCoord) -> Vec<HexCoord> {
         let directions = [
             HexCoord { q: 1, r: 0 },

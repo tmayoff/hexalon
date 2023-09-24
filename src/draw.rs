@@ -144,29 +144,34 @@ pub fn on_draw(
                     draw.draw_cell(cell, &mut cell_q, &mut materials, false);
                 }
             }
-            CellEvent::Released(cell) => {
-                if draw.draw_mode == DrawMode::Line {
-                    if let Some(start_cell) = draw.start_cell {
-                        draw.draw_line(
-                            &start_cell,
-                            &cell.unwrap(),
-                            &mut cell_q,
-                            &mut materials,
-                            grid,
-                            false,
-                        );
-                    }
-                    draw.last_hint = Vec::new();
-                } else if draw.draw_mode == DrawMode::Box {
-                    if let Some(start_cell) = draw.start_cell {
-                        draw.draw_box(
-                            &start_cell,
-                            &cell.unwrap(),
-                            &mut cell_q,
-                            &mut materials,
-                            grid,
-                            false,
-                        );
+            CellEvent::Released(distance) => {
+                // Get end cell
+                if let Some(start_entity) = draw.start_cell {
+                    let (start_cell, _) = cell_q.get(start_entity).unwrap();
+                    let c = grid.hex_coord_to_pos(&start_cell.pos) + *distance;
+
+                    let end_cell = grid.get_cell(&grid.pos_to_hex_coord(&c));
+                    if let Some(end_cell) = end_cell {
+                        if draw.draw_mode == DrawMode::Line {
+                            draw.draw_line(
+                                &start_entity,
+                                end_cell,
+                                &mut cell_q,
+                                &mut materials,
+                                grid,
+                                false,
+                            );
+                            draw.last_hint = Vec::new();
+                        } else if draw.draw_mode == DrawMode::Box {
+                            draw.draw_box(
+                                &start_entity,
+                                end_cell,
+                                &mut cell_q,
+                                &mut materials,
+                                grid,
+                                false,
+                            );
+                        }
                     }
                 }
 
