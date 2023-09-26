@@ -1,10 +1,10 @@
 use std::cmp;
 
-use bevy::prelude::*;
+use bevy::{math::vec4, prelude::*};
 
 use crate::{
     cell::{Cell, CellEvent},
-    grid::{Grid, HEX_HOVER_COLOR},
+    grid::Grid,
     hex::HexCoord,
 };
 
@@ -19,6 +19,11 @@ pub enum DrawMode {
 pub struct Selection {
     pub start: Entity,
     pub end: Option<Entity>,
+}
+
+enum DrawColor {
+    Color(Color),
+    Hint,
 }
 
 #[derive(Component)]
@@ -52,7 +57,7 @@ impl Draw {
     ) {
         for cell in &self.last_hint {
             let (c, _) = cell_q.get(*cell).unwrap();
-            self.draw_cell_color(cell, c.color, cell_q, materials, false);
+            Self::draw_cell_color(cell, DrawColor::Color(c.color), cell_q, materials);
         }
 
         self.last_hint.clear();
@@ -126,25 +131,33 @@ impl Draw {
         materials: &mut ResMut<Assets<ColorMaterial>>,
         hint: bool,
     ) {
-        let color = if hint { *HEX_HOVER_COLOR } else { self.color };
-        self.draw_cell_color(cell, color, cell_q, materials, hint);
+        Self::draw_cell_color(
+            cell,
+            if hint {
+                DrawColor::Hint
+            } else {
+                DrawColor::Color(self.color)
+            },
+            cell_q,
+            materials,
+        );
     }
 
     fn draw_cell_color(
-        &self,
         cell: &Entity,
-        color: Color,
+        color: DrawColor,
         cell_q: &mut Query<(&mut Cell, &Handle<ColorMaterial>)>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
-        hint: bool,
     ) {
         let (mut cell, mat) = cell_q.get_mut(*cell).unwrap();
         let mat = materials.get_mut(mat).unwrap();
 
-        mat.color = color;
-
-        if !hint {
-            cell.color = color;
+        match color {
+            DrawColor::Color(c) => {
+                mat.color = c;
+                cell.color = c;
+            }
+            DrawColor::Hint => mat.color = cell.color + vec4(-0.2, -0.2, -0.2, 0.0),
         }
     }
 }
@@ -170,6 +183,7 @@ pub fn on_draw(
             }
             CellEvent::Released(distance) => {
                 // Get end cell
+                draw.reset_hints(&mut cell_q, &mut materials);
                 if let Some(start_entity) = draw.start_cell {
                     let (start_cell, _) = cell_q.get(start_entity).unwrap();
                     let c = grid.hex_coord_to_pos(&start_cell.pos) + *distance;
