@@ -45,6 +45,7 @@ pub struct Creature {
     pub name: String,
     pub initiative: i32,
     pub player: Option<bool>,
+    #[serde(default)]
     pub active: bool,
     pub number: i32,
     pub cr: Option<String>,
