@@ -78,7 +78,7 @@ impl Token {
                     token.name.clone(),
                     TextStyle {
                         font: asset_server.load("fonts/Roboto-Regular.ttf"),
-                        font_size: 30.0,
+                        font_size: 33.0,
                         color: Color::BLACK,
                     },
                 ),
@@ -91,7 +91,26 @@ impl Token {
             })
             .id();
 
-        commands.entity(entity).add_child(text);
+        let text1 = commands
+            .spawn(Text2dBundle {
+                text: Text::from_section(
+                    token.name.clone(),
+                    TextStyle {
+                        font: asset_server.load("fonts/Roboto-Regular.ttf"),
+                        font_size: 30.0,
+                        color: Color::WHITE,
+                    },
+                ),
+                transform: Transform::from_translation(Vec3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.1,
+                }),
+                ..Default::default()
+            })
+            .id();
+
+        commands.entity(entity).add_child(text).add_child(text1);
 
         entity
     }
