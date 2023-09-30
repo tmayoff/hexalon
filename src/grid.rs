@@ -11,18 +11,6 @@ const HEX_SIZE: f32 = 35.0;
 const HEX_SPACING: f32 = 1.0;
 
 lazy_static! {
-    pub static ref HEX_HOVER_COLOR: Color = Color::Rgba {
-        red: 0.9,
-        green: 0.9,
-        blue: 0.9,
-        alpha: 1.0
-    };
-    pub static ref HEX_PRESSED_COLOR: Color = Color::Rgba {
-        red: 0.5,
-        green: 0.5,
-        blue: 0.5,
-        alpha: 1.0
-    };
     static ref HEX_GRID_HORIZONTAL_OFFSET: f32 = 3_f32.sqrt();
 }
 

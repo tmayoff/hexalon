@@ -22,25 +22,22 @@ impl HexCoord {
     }
 
     pub fn round(coord: FractionalHexCoord) -> HexCoord {
-        let mut q = (coord.q).round();
-        let mut r = (coord.r).round();
-        let s = (-coord.q - coord.r).round();
+        let qgrid = coord.q.round() as i32;
+        let rgrid = coord.r.round() as i32;
 
-        let q_diff = (q - coord.q).abs();
-        let r_diff = (r - coord.r).abs();
-        let s_diff = (s - (-coord.q - coord.r)).abs();
+        let q = coord.q - qgrid as f32;
+        let r = coord.r - rgrid as f32;
 
-        if q_diff > r_diff && q_diff > s_diff {
-            q = -r - s;
-        } else if r_diff > s_diff {
-            r = -q - s
+        if q.abs() >= r.abs() {
+            HexCoord {
+                q: qgrid + (q + 0.5 * r).round() as i32,
+                r: rgrid,
+            }
         } else {
-            // s = -q - r
-        }
-
-        HexCoord {
-            q: q as i32,
-            r: r as i32,
+            HexCoord {
+                q: qgrid,
+                r: rgrid + (r + 0.5 * q).round() as i32,
+            }
         }
     }
 

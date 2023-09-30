@@ -59,8 +59,8 @@ impl Cell {
                 PickableBundle::default(),
                 On::<Pointer<Over>>::run(on_hover_enter),
                 On::<Pointer<Out>>::run(on_hover_out),
+                On::<Pointer<DragStart>>::run(on_drag_start),
                 On::<Pointer<DragEnd>>::run(on_drag_end),
-                On::<Pointer<Down>>::run(on_pressed),
             ))
             .id()
     }
@@ -93,7 +93,7 @@ fn on_hover_out(
     }
 }
 
-fn on_pressed(event: Listener<Pointer<Down>>, mut cell_event: EventWriter<CellEvent>) {
+fn on_drag_start(event: Listener<Pointer<DragStart>>, mut cell_event: EventWriter<CellEvent>) {
     if event.button != PointerButton::Primary {
         return;
     }
