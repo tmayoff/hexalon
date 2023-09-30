@@ -2212,6 +2212,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "443144c8cdadd93ebf52ddb4056d257f5b52c04d3c804e657d19eb73fc33668b"
 
 [[package]]
+name = "hexalon"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "bevy_mod_picking",
+ "bevy_mod_reqwest",
+ "bevy_pancam",
+ "env_logger",
+ "futures-lite",
+ "lazy_static",
+ "log",
+ "serde",
+]
+
+[[package]]
 name = "hexasphere"
 version = "9.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3944,22 +3960,6 @@ name = "ttf-parser"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a464a4b34948a5f67fddd2b823c62d9d92e44be75058b99939eae6c5b6960b33"
-
-[[package]]
-name = "ttrpg"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_egui",
- "bevy_mod_picking",
- "bevy_mod_reqwest",
- "bevy_pancam",
- "env_logger",
- "futures-lite",
- "lazy_static",
- "log",
- "serde",
-]
 
 [[package]]
 name = "twox-hash"
