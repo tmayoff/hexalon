@@ -2236,6 +2236,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+ "bevy_mod_outline",
  "bevy_mod_picking",
  "bevy_mod_reqwest",
  "bevy_pancam",

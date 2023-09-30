@@ -6,6 +6,7 @@ use crate::grid::Grid;
 use crate::initiative_tracker::Tracker;
 use crate::token::{Token, TokenEvent, TokenType};
 
+#[allow(clippy::too_many_arguments)]
 pub fn gui(
     mut commands: Commands,
     mut contexts: EguiContexts,

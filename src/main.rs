@@ -9,11 +9,7 @@ mod initiative_tracker;
 mod token;
 mod ui;
 
-use bevy::{
-    audio::AudioPlugin,
-    core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
-    prelude::*,
-};
+use bevy::{audio::AudioPlugin, prelude::*};
 use bevy_egui::EguiPlugin;
 use bevy_mod_outline::OutlinePlugin;
 use bevy_mod_picking::prelude::*;

@@ -62,7 +62,6 @@ impl Cell {
             On::<Pointer<Out>>::run(on_hover_out),
             On::<Pointer<DragStart>>::run(on_drag_start),
             On::<Pointer<DragEnd>>::run(on_drag_end),
-            On::<Pointer<Up>>::run(on_released),
         ));
 
         entity.insert(OutlineBundle {
