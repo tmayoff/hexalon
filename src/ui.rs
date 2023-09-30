@@ -47,6 +47,12 @@ pub fn gui(
                         ui.radio_value(&mut draw.draw_mode, DrawMode::Box, "Box");
                         ui.radio_value(&mut draw.draw_mode, DrawMode::Line, "Line");
                     });
+
+                    ui.end_row();
+
+                    if draw.draw_mode == DrawMode::Box {
+                        ui.checkbox(&mut draw.fill, "Fill Box");
+                    }
                     ui.end_row();
 
                     ui.label("Color");
