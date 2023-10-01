@@ -32,7 +32,7 @@ impl Cell {
         world_pos: Vec2,
         size: f32,
         pos: HexCoord,
-        commands: &mut Commands,
+        mut commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
     ) -> Entity {

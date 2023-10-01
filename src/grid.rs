@@ -14,6 +14,11 @@ lazy_static! {
     static ref HEX_GRID_HORIZONTAL_OFFSET: f32 = 3_f32.sqrt();
 }
 
+#[derive(Event)]
+pub enum GridEvent {
+    Resize(i32, i32),
+}
+
 // TODO replace with normal matrices
 #[derive(Default)]
 struct Orientation {
@@ -28,6 +33,14 @@ struct Orientation {
     b3: f32,
 }
 
+pub struct Plugin;
+impl bevy::prelude::Plugin for Plugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<GridEvent>()
+            .add_systems(Update, on_grid_event);
+    }
+}
+
 #[derive(Component, Default)]
 pub struct Grid {
     pub size: i32,
@@ -38,6 +51,11 @@ pub struct Grid {
 }
 
 impl Grid {
+    // Returns the left, right, top, bottom, edges for a grid of a certain size
+    fn get_edges(size: i32) -> (i32, i32, i32, i32) {
+        (-size / 2, size / 2, -size / 2, size / 2)
+    }
+
     pub fn create(
         size: i32,
         commands: &mut Commands,
@@ -83,6 +101,58 @@ impl Grid {
         }
 
         commands.spawn(grid);
+    }
+
+    pub fn recreate(
+        &mut self,
+        size: i32,
+        commands: &mut Commands,
+        meshes: &mut ResMut<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+    ) {
+        let old_size = self.size;
+        let new_size = size;
+        self.size = new_size;
+
+        if new_size < old_size {
+            let (left, right, top, bottom) = Grid::get_edges(old_size);
+            for r in top..=bottom {
+                let offset_r = (r as f32 / 2.0).floor() as i32;
+
+                for q in (left - offset_r)..=(right - offset_r) {
+                    let coord = HexCoord { q, r };
+                    let e = self.cells.get(&coord);
+                    match e {
+                        Some(e) => {
+                            commands.entity(*e).despawn_recursive();
+
+                            self.cells.remove(&coord);
+                        }
+                        None => todo!(),
+                    }
+                }
+            }
+        }
+
+        let (left, right, top, bottom) = Grid::get_edges(new_size);
+        for r in top..=bottom {
+            let offset_r = (r as f32 / 2.0).floor() as i32;
+
+            for q in (left - offset_r)..=(right - offset_r) {
+                let coord = HexCoord { q, r };
+
+                let id = Cell::create(
+                    self.hex_coord_to_pos(&coord),
+                    HEX_SIZE,
+                    HexCoord { q, r },
+                    commands,
+                    meshes,
+                    materials,
+                );
+
+                self.cells.insert(HexCoord { q, r }, id);
+            }
+        }
     }
 
     pub fn get_cell(&self, pos: &HexCoord) -> Option<&Entity> {
@@ -174,6 +244,24 @@ impl Grid {
         }
 
         cells
+    }
+}
+
+fn on_grid_event(
+    mut events: EventReader<GridEvent>,
+    mut grid_q: Query<&mut Grid>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let mut grid = grid_q.single_mut();
+
+    for e in events.iter() {
+        match e {
+            GridEvent::Resize(q, r) => {
+                grid.recreate(*q, &mut commands, &mut meshes, &mut materials);
+            }
+        }
     }
 }
 

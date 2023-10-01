@@ -41,7 +41,7 @@ impl Default for Draw {
     fn default() -> Self {
         Self {
             draw_mode: DrawMode::Cell,
-            fill: false,
+            fill: true,
             color: Color::BLUE,
             start_cell: None,
             last_hint: Vec::new(),
