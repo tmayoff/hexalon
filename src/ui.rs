@@ -2,15 +2,17 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::draw::{Draw, DrawMode};
-use crate::grid::Grid;
+use crate::grid::{Grid, GridEvent};
 use crate::initiative_tracker::Tracker;
 use crate::token::{Token, TokenEvent, TokenType};
 
+#[allow(clippy::too_many_arguments)]
 pub fn gui(
     mut commands: Commands,
     mut contexts: EguiContexts,
     mut draw_q: Query<&mut Draw>,
     mut token_event: EventWriter<TokenEvent>,
+    mut grid_event: EventWriter<GridEvent>,
     grid_q: Query<&Grid>,
     cam_q: Query<&Transform, With<Camera2d>>,
     token_q: Query<Entity, With<Token>>,
@@ -35,6 +37,21 @@ pub fn gui(
 
     egui::Window::new("Toolbox").show(ctx, |ui| {
         ui.vertical(|ui| {
+            ui.heading("Grid");
+            ui.horizontal(|ui| {
+                let mut size = grid.size;
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut size)
+                            .speed(1.0)
+                            .clamp_range(0..=250),
+                    )
+                    .changed()
+                {
+                    grid_event.send(GridEvent::Resize(size, size));
+                }
+            });
+
             ui.heading("Drawing");
             egui::Grid::new("draw_settings")
                 .num_columns(2)
@@ -45,14 +62,13 @@ pub fn gui(
                     ui.horizontal(|ui| {
                         ui.radio_value(&mut draw.draw_mode, DrawMode::Cell, "Cell");
                         ui.radio_value(&mut draw.draw_mode, DrawMode::Box, "Box");
+                        if draw.draw_mode == DrawMode::Box {
+                            ui.checkbox(&mut draw.fill, "Fill Box");
+                        }
+
                         ui.radio_value(&mut draw.draw_mode, DrawMode::Line, "Line");
                     });
 
-                    ui.end_row();
-
-                    if draw.draw_mode == DrawMode::Box {
-                        ui.checkbox(&mut draw.fill, "Fill Box");
-                    }
                     ui.end_row();
 
                     ui.label("Color");

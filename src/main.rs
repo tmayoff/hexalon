@@ -46,6 +46,7 @@ fn main() {
             PanCamPlugin,
             EguiPlugin,
             ReqwestPlugin,
+            grid::Plugin,
         ))
         .add_systems(Startup, setup)
         .add_systems(
