@@ -7,38 +7,34 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'ttrpg'",
+            "name": "Debug executable 'hexalon'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=ttrpg",
-                    "--package=ttrpg"
+                    "--bin=hexalon",
+                    "--package=hexalon"
                 ],
                 "filter": {
-                    "name": "ttrpg",
+                    "name": "hexalon",
                     "kind": "bin"
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "RUST_LOG": "warn,ttrpg=trace",
-                "CARGO_MANIFEST_DIR": "${workspaceFolder}"
-            }
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'ttrpg'",
+            "name": "Debug unit tests in executable 'hexalon'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=ttrpg",
-                    "--package=ttrpg"
+                    "--bin=hexalon",
+                    "--package=hexalon"
                 ],
                 "filter": {
-                    "name": "ttrpg",
+                    "name": "hexalon",
                     "kind": "bin"
                 }
             },
