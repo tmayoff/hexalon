@@ -60,7 +60,7 @@ fn main() {
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
         .insert_resource(ReqTimer(Timer::new(
-            std::time::Duration::from_millis(500),
+            std::time::Duration::from_millis(2000),
             TimerMode::Repeating,
         )))
         .run();
