@@ -22,8 +22,6 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 use draw::Draw;
 use grid::Grid;
 
-use crate::initiative_tracker::Tracker;
-
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
         red: 0.25,
@@ -62,7 +60,7 @@ fn main() {
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
         .insert_resource(ReqTimer(Timer::new(
-            std::time::Duration::from_millis(500),
+            std::time::Duration::from_millis(2000),
             TimerMode::Repeating,
         )))
         .run();
@@ -81,7 +79,6 @@ fn setup(
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
 
     commands.spawn(Draw::default());
-    commands.spawn(Tracker::default());
 
     // Setup Camera
     commands.spawn((

@@ -13,13 +13,17 @@ impl bevy::prelude::Plugin for Plugin {
     }
 }
 
-fn sync(mut contexts: EguiContexts, tracker_q: Query<&Tracker>) {
+fn sync(mut contexts: EguiContexts, mut tracker_q: Query<&mut Tracker>) {
     let ctx = contexts.ctx_mut();
-    let tracker = tracker_q.single();
+    let mut tracker = tracker_q.single_mut();
 
-    egui::Window::new("Sync").show(ctx, |ui| match &tracker.error {
-        Some(e) => ui.label(format!("Sync: {}", e)),
-        None => ui.label("Sync: Okay"),
+    egui::Window::new("Sync").show(ctx, |ui| {
+        match &tracker.error {
+            Some(e) => ui.label(format!("Sync: {}", e)),
+            None => ui.label("Sync: Okay"),
+        };
+
+        ui.checkbox(&mut tracker.sync, "Sync Encounter");
     });
 }
 

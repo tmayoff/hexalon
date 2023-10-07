@@ -155,18 +155,77 @@ fn find_empty_cells(
 }
 
 pub fn on_tracker_event(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut event_reader: EventReader<TrackerEvent>,
-    mut tokens_q: Query<(&Token, &mut Sprite)>,
+    mut token_q: Query<(Entity, &Token, &mut Sprite)>,
+    grid_q: Query<&Grid>,
 ) {
+    let grid = grid_q.single();
+
     for e in event_reader.iter() {
-        if let TrackerEvent::TurnUpdate(c) = e {
-            for (tok, mut sprite) in &mut tokens_q {
-                if c.id == tok.creature_id {
-                    sprite.color = tok.color + vec4(1.0, 1.0, 1.0, 0.0);
-                } else {
-                    sprite.color = tok.color;
+        match e {
+            TrackerEvent::TurnUpdate(c) => {
+                for (_, tok, mut sprite) in &mut token_q {
+                    if c.id == tok.creature_id {
+                        sprite.color = tok.color + vec4(1.0, 1.0, 1.0, 0.0);
+                    } else {
+                        sprite.color = tok.color;
+                    }
                 }
             }
+            TrackerEvent::CreaturesAdded(to_add) => {
+                for c in to_add {
+                    let mut name = c.name.split(' ').next().unwrap().to_string();
+                    if c.number > 0 {
+                        name += &format!(" {}", c.number);
+                    }
+
+                    let mut taken_coords = token_q.iter().map(|t| t.1.coords).collect();
+                    let coords = find_empty_cells(
+                        &taken_coords,
+                        grid,
+                        grid.pos_to_hex_coord(&Vec2 { x: 0.0, y: 0.0 }),
+                    );
+
+                    match coords {
+                        Some(coords) => {
+                            let player = c.player.is_some();
+
+                            let pos = grid.hex_coord_to_pos(&coords);
+                            let tok = Token {
+                                name,
+                                creature_id: c.id.clone(),
+                                token_type: if player {
+                                    TokenType::Party
+                                } else {
+                                    TokenType::Enemy
+                                },
+                                coords,
+                                color: if player {
+                                    Color::BLUE
+                                } else {
+                                    Color::rgb(0.93, 0.13, 0.25)
+                                },
+                            };
+                            Token::create(&mut commands, &asset_server, tok.clone(), &pos);
+                            taken_coords.push(coords);
+                        }
+                        None => log::error!("Token exists in that location"),
+                    }
+                }
+            }
+            TrackerEvent::CreaturesRemoved(to_remove) => {
+                for c in to_remove.iter().map(|c| c.id.clone()) {
+                    for t in token_q.iter() {
+                        if t.1.creature_id == c {
+                            commands.entity(t.0).despawn_recursive();
+                        }
+                    }
+                }
+            }
+            TrackerEvent::HealthUpdate(_) => todo!(),
+            TrackerEvent::StatusUpdate(_) => todo!(),
         }
     }
 }
