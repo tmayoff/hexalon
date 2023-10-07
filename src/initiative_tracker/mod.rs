@@ -66,8 +66,17 @@ pub enum TrackerEvent {
     TurnUpdate(Creature),
 }
 
+pub struct Plugin;
+impl bevy::prelude::Plugin for Plugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, (send_request, handle_response))
+            .add_event::<TrackerEvent>();
+    }
+}
+
 #[derive(Component, Default)]
 pub struct Tracker {
+    pub error: Option<String>,
     pub ordered: Vec<Creature>,
 }
 
@@ -109,19 +118,22 @@ pub fn handle_response(
     let mut tracker = tracker_q.single_mut();
     for (e, res) in results.iter_mut() {
         match &res.0 {
-            Ok(_) => {
-                let ordered_data = res
-                    .deserialize_json::<Vec<Creature>>()
-                    .expect("Failed to get new tracker order");
-                if tracker.ordered != ordered_data {
-                    let e = tracker.get_turn_event(&ordered_data);
-                    if let Some(e) = e {
-                        event_writer.send(e);
+            Ok(_) => match res.deserialize_json::<Vec<Creature>>() {
+                Some(ordered_data) => {
+                    if tracker.ordered != ordered_data {
+                        let e = tracker.get_turn_event(&ordered_data);
+                        if let Some(e) = e {
+                            event_writer.send(e);
+                        }
+                        tracker.ordered = ordered_data;
                     }
-                    tracker.ordered = ordered_data;
+                    tracker.error = None;
                 }
-            }
-            Err(e) => log::error!("{:?}", e),
+                None => {
+                    tracker.error = format!("Failed to deserialize data {:?}", res.as_str()).into()
+                }
+            },
+            Err(e) => tracker.error = Some(e.to_string()),
         }
 
         // Remove the old request

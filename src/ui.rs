@@ -6,8 +6,25 @@ use crate::grid::{Grid, GridEvent};
 use crate::initiative_tracker::Tracker;
 use crate::token::{Token, TokenEvent, TokenType};
 
+pub struct Plugin;
+impl bevy::prelude::Plugin for Plugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, (toolbox, sync));
+    }
+}
+
+fn sync(mut contexts: EguiContexts, tracker_q: Query<&Tracker>) {
+    let ctx = contexts.ctx_mut();
+    let tracker = tracker_q.single();
+
+    egui::Window::new("Sync").show(ctx, |ui| match &tracker.error {
+        Some(e) => ui.label(format!("Sync: {}", e)),
+        None => ui.label("Sync: Okay"),
+    });
+}
+
 #[allow(clippy::too_many_arguments)]
-pub fn gui(
+fn toolbox(
     mut commands: Commands,
     mut contexts: EguiContexts,
     mut draw_q: Query<&mut Draw>,

@@ -47,14 +47,13 @@ fn main() {
             EguiPlugin,
             ReqwestPlugin,
             grid::Plugin,
+            ui::Plugin,
+            initiative_tracker::Plugin,
         ))
         .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
-                initiative_tracker::send_request,
-                initiative_tracker::handle_response,
-                ui::gui,
                 draw::on_draw,
                 token::on_token_event,
                 token::on_tracker_event,
@@ -62,7 +61,6 @@ fn main() {
         )
         .add_event::<cell::CellEvent>()
         .add_event::<token::TokenEvent>()
-        .add_event::<initiative_tracker::TrackerEvent>()
         .insert_resource(ReqTimer(Timer::new(
             std::time::Duration::from_millis(500),
             TimerMode::Repeating,
