@@ -22,8 +22,6 @@ use bevy_pancam::{PanCam, PanCamPlugin};
 use draw::Draw;
 use grid::Grid;
 
-use crate::initiative_tracker::Tracker;
-
 lazy_static! {
     static ref HEX_OUTLINE_COLOR: Color = Color::Rgba {
         red: 0.25,
@@ -81,7 +79,6 @@ fn setup(
     Grid::create(GRID_SIZE, &mut commands, &mut meshes, &mut materials);
 
     commands.spawn(Draw::default());
-    commands.spawn(Tracker::default());
 
     // Setup Camera
     commands.spawn((

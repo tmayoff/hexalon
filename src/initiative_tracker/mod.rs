@@ -63,13 +63,18 @@ pub struct Data {
 
 #[derive(Event)]
 pub enum TrackerEvent {
+    CreaturesAdded(Vec<Creature>),
+    CreaturesRemoved(Vec<Creature>),
     TurnUpdate(Creature),
+    HealthUpdate(Creature),
+    StatusUpdate(Creature),
 }
 
 pub struct Plugin;
 impl bevy::prelude::Plugin for Plugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (send_request, handle_response))
+        app.add_systems(Startup, setup)
+            .add_systems(Update, (send_request, handle_response))
             .add_event::<TrackerEvent>();
     }
 }
@@ -78,9 +83,28 @@ impl bevy::prelude::Plugin for Plugin {
 pub struct Tracker {
     pub error: Option<String>,
     pub ordered: Vec<Creature>,
+    pub sync: bool,
 }
 
 impl Tracker {
+    fn get_events(&self, new_state: &[Creature]) -> Vec<TrackerEvent> {
+        let mut events = Vec::new();
+
+        if let Some(e) = self.get_turn_event(new_state) {
+            events.push(e);
+        }
+
+        if let Some(e) = self.get_added_creature_events(new_state) {
+            events.push(e);
+        }
+
+        if let Some(e) = self.get_removed_creature_events(new_state) {
+            events.push(e);
+        }
+
+        events
+    }
+
     fn get_turn_event(&self, new_state: &[Creature]) -> Option<TrackerEvent> {
         let current_turn = self.ordered.iter().find(|c| c.active);
         let new_turn = new_state.iter().find(|c| c.active);
@@ -93,12 +117,49 @@ impl Tracker {
 
         None
     }
+
+    fn get_added_creature_events(&self, new_state: &[Creature]) -> Option<TrackerEvent> {
+        let mut added_creatures = Vec::new();
+
+        for creature in new_state {
+            if !self.ordered.iter().any(|c| c.id == creature.id) {
+                added_creatures.push(creature.to_owned());
+            }
+        }
+
+        match !added_creatures.is_empty() {
+            true => Some(TrackerEvent::CreaturesAdded(added_creatures)),
+            false => None,
+        }
+    }
+
+    fn get_removed_creature_events(&self, new_state: &[Creature]) -> Option<TrackerEvent> {
+        let mut removed_creatures = Vec::new();
+
+        for creature in self.ordered.iter() {
+            if !new_state.iter().any(|c| c.id == creature.id) {
+                removed_creatures.push(creature.to_owned());
+            }
+        }
+
+        match !removed_creatures.is_empty() {
+            true => Some(TrackerEvent::CreaturesRemoved(removed_creatures)),
+            false => None,
+        }
+    }
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn(Tracker {
+        sync: true,
+        ..Default::default()
+    });
 }
 
 #[derive(Component)]
 pub struct TrackerOrdered;
 
-pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
+fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
     if timer.0.tick(time.delta()).just_finished() {
         let req = reqwest::Request::new(
             reqwest::Method::GET,
@@ -109,7 +170,7 @@ pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<R
     }
 }
 
-pub fn handle_response(
+fn handle_response(
     mut commands: Commands,
     mut event_writer: EventWriter<TrackerEvent>,
     mut tracker_q: Query<&mut Tracker>,
@@ -121,8 +182,8 @@ pub fn handle_response(
             Ok(_) => match res.deserialize_json::<Vec<Creature>>() {
                 Some(ordered_data) => {
                     if tracker.ordered != ordered_data {
-                        let e = tracker.get_turn_event(&ordered_data);
-                        if let Some(e) = e {
+                        let events = tracker.get_events(&ordered_data);
+                        for e in events {
                             event_writer.send(e);
                         }
                         tracker.ordered = ordered_data;
