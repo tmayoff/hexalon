@@ -268,7 +268,7 @@ dependencies = [
  "async-task",
  "concurrent-queue",
  "fastrand 1.9.0",
- "futures-lite",
+ "futures-lite 1.13.0",
  "slab",
 ]
 
@@ -801,7 +801,7 @@ dependencies = [
  "bevy",
  "bytes",
  "crossbeam-channel",
- "futures-lite",
+ "futures-lite 1.13.0",
  "reqwest",
  "serde",
  "serde_json",
@@ -997,7 +997,7 @@ dependencies = [
  "codespan-reporting",
  "downcast-rs",
  "encase",
- "futures-lite",
+ "futures-lite 1.13.0",
  "hexasphere",
  "image",
  "js-sys",
@@ -1086,7 +1086,7 @@ dependencies = [
  "async-executor",
  "async-task",
  "concurrent-queue",
- "futures-lite",
+ "futures-lite 1.13.0",
  "wasm-bindgen-futures",
 ]
 
@@ -1924,6 +1924,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-lite"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c1155db57329dca6d018b61e76b1488ce9a2e5e44028cac420a5898f4fcef63"
+dependencies = [
+ "fastrand 2.0.0",
+ "futures-core",
+ "futures-io",
+ "memchr",
+ "parking",
+ "pin-project-lite",
+ "waker-fn",
+]
+
+[[package]]
 name = "futures-sink"
 version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2221,7 +2236,7 @@ dependencies = [
  "bevy_mod_reqwest",
  "bevy_pancam",
  "env_logger",
- "futures-lite",
+ "futures-lite 2.0.0",
  "lazy_static",
  "log",
  "serde",
