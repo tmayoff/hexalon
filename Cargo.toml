@@ -15,7 +15,7 @@ env_logger = "0.10.0"
 futures-lite = "2.0.1"
 lazy_static = "1.4.0"
 log = "0.4.20"
-serde = { version = "1.0.190", features = ["derive"] }
+serde = { version = "1.0.192", features = ["derive"] }
 
 # Enable a small amount of optimization in debug mode
 # [profile.dev]
