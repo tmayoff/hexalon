@@ -43,16 +43,12 @@
       in
       rec {
         # For `nix build` & `nix run`:
-        defaultPackage = packages.beyv_template;
-        packages = rec {
-          beyv_template = naersk'.buildPackage
-            {
-              src = ./.;
-              nativeBuildInputs = nativeBuildInputs;
-              buildInputs = buildInputs;
+        defaultPackage = naersk'.buildPackage {
+          src = ./.;
+          nativeBuildInputs = nativeBuildInputs;
+          buildInputs = buildInputs;
 
-              cargoBuildOptions = x: x ++ [ "--no-default-features" ];
-            };
+          cargoBuildOptions = x: x ++ [ "--no-default-features" ];
         };
 
         # For `nix develop`:
