@@ -13,11 +13,12 @@ use bevy::{
     audio::AudioPlugin,
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
     prelude::*,
+    window::WindowPlugin,
 };
 use bevy_egui::EguiPlugin;
 use bevy_mod_picking::prelude::*;
-use bevy_mod_reqwest::ReqwestPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
+use wasm_bindgen::prelude::*;
 
 use draw::Draw;
 use grid::Grid;
@@ -34,38 +35,48 @@ lazy_static! {
     static ref CLEAR_COLOR: Color = *HEX_OUTLINE_COLOR;
 }
 
-fn main() {
-    App::new()
-        .insert_resource(ClearColor(*CLEAR_COLOR))
-        .add_plugins((
-            DefaultPlugins.build().disable::<AudioPlugin>(),
-            DefaultPickingPlugins
-                .build()
-                .disable::<DebugPickingPlugin>()
-                .disable::<DefaultHighlightingPlugin>(),
-            PanCamPlugin,
-            EguiPlugin,
-            ReqwestPlugin,
-            grid::Plugin,
-            ui::Plugin,
-            initiative_tracker::Plugin,
-        ))
-        .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            (
-                draw::on_draw,
-                token::on_token_event,
-                token::on_tracker_event,
-            ),
-        )
-        .add_event::<cell::CellEvent>()
-        .add_event::<token::TokenEvent>()
-        .insert_resource(ReqTimer(Timer::new(
-            std::time::Duration::from_millis(500),
-            TimerMode::Repeating,
-        )))
-        .run();
+#[wasm_bindgen]
+pub fn run() {
+    let mut app = App::new();
+    //     .insert_resource(ClearColor(*CLEAR_COLOR))
+    app.add_plugins((
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    canvas: Some("#hexalon-canvas".into()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            })
+            .disable::<AudioPlugin>(),
+        DefaultPickingPlugins
+            .build()
+            .disable::<DebugPickingPlugin>()
+            .disable::<DefaultHighlightingPlugin>(),
+        PanCamPlugin,
+        EguiPlugin,
+        // ReqwestPlugin,
+        grid::Plugin,
+        ui::Plugin,
+        //         initiative_tracker::Plugin,
+    ))
+    .add_systems(Startup, setup)
+    .add_systems(
+        Update,
+        (
+            draw::on_draw,
+            token::on_token_event,
+            token::on_tracker_event,
+        ),
+    );
+    //     .add_event::<cell::CellEvent>()
+    //     .add_event::<token::TokenEvent>()
+    //     .insert_resource(ReqTimer(Timer::new(
+    //         std::time::Duration::from_millis(500),
+    //         TimerMode::Repeating,
+    //     )))
+
+    app.run();
 }
 
 #[derive(Resource)]

@@ -1,7 +1,6 @@
 mod state;
 
 use bevy::prelude::*;
-use bevy_mod_reqwest::{reqwest, ReqwestBytesResult, ReqwestRequest};
 use serde::Deserialize;
 
 use crate::ReqTimer;
@@ -69,8 +68,7 @@ pub enum TrackerEvent {
 pub struct Plugin;
 impl bevy::prelude::Plugin for Plugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (send_request, handle_response))
-            .add_event::<TrackerEvent>();
+        // app.add_systems(Update).add_event::<TrackerEvent>();
     }
 }
 
@@ -95,48 +93,48 @@ impl Tracker {
     }
 }
 
-#[derive(Component)]
-pub struct TrackerOrdered;
+// #[derive(Component)]
+// pub struct TrackerOrdered;
 
-pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        let req = reqwest::Request::new(
-            reqwest::Method::GET,
-            "http://127.0.0.1:8080/tracker/ordered".try_into().unwrap(),
-        );
+// pub fn send_request(mut commands: Commands, time: Res<Time>, mut timer: ResMut<ReqTimer>) {
+//     if timer.0.tick(time.delta()).just_finished() {
+//         let req = reqwest::Request::new(
+//             reqwest::Method::GET,
+//             "http://127.0.0.1:8080/tracker/ordered".try_into().unwrap(),
+//         );
 
-        commands.spawn((ReqwestRequest::new(req), TrackerOrdered));
-    }
-}
+//         commands.spawn((ReqwestRequest::new(req), TrackerOrdered));
+//     }
+// }
 
-pub fn handle_response(
-    mut commands: Commands,
-    mut event_writer: EventWriter<TrackerEvent>,
-    mut tracker_q: Query<&mut Tracker>,
-    mut results: Query<(Entity, &ReqwestBytesResult), With<TrackerOrdered>>,
-) {
-    let mut tracker = tracker_q.single_mut();
-    for (e, res) in results.iter_mut() {
-        match &res.0 {
-            Ok(_) => match res.deserialize_json::<Vec<Creature>>() {
-                Some(ordered_data) => {
-                    if tracker.ordered != ordered_data {
-                        let e = tracker.get_turn_event(&ordered_data);
-                        if let Some(e) = e {
-                            event_writer.send(e);
-                        }
-                        tracker.ordered = ordered_data;
-                    }
-                    tracker.error = None;
-                }
-                None => {
-                    tracker.error = format!("Failed to deserialize data {:?}", res.as_str()).into()
-                }
-            },
-            Err(e) => tracker.error = Some(e.to_string()),
-        }
+// pub fn handle_response(
+//     mut commands: Commands,
+//     mut event_writer: EventWriter<TrackerEvent>,
+//     mut tracker_q: Query<&mut Tracker>,
+//     mut results: Query<(Entity, &ReqwestBytesResult), With<TrackerOrdered>>,
+// ) {
+//     let mut tracker = tracker_q.single_mut();
+//     for (e, res) in results.iter_mut() {
+//         match &res.0 {
+//             Ok(_) => match res.deserialize_json::<Vec<Creature>>() {
+//                 Some(ordered_data) => {
+//                     if tracker.ordered != ordered_data {
+//                         let e = tracker.get_turn_event(&ordered_data);
+//                         if let Some(e) = e {
+//                             event_writer.send(e);
+//                         }
+//                         tracker.ordered = ordered_data;
+//                     }
+//                     tracker.error = None;
+//                 }
+//                 None => {
+//                     tracker.error = format!("Failed to deserialize data {:?}", res.as_str()).into()
+//                 }
+//             },
+//             Err(e) => tracker.error = Some(e.to_string()),
+//         }
 
-        // Remove the old request
-        commands.entity(e).despawn_recursive();
-    }
-}
+//         // Remove the old request
+//         commands.entity(e).despawn_recursive();
+//     }
+// }
